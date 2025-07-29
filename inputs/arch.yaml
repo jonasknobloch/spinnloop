@@ -1,22 +1,52 @@
 architecture:
   version: 0.4
   nodes:
-    - !Container
-      name: accelerator
-      attributes:
-        technology: "40nm"
-        global_cycle_seconds: 1e-9
-
     - !Component
-      name: Buffer
-      class: regfile
+      name: DRAM
+      class: DRAM
       attributes:
-        depth: 64
-        width: 8
+        depth: 2147483648
+        width: 64
+        block_size: 8
+        word_bits: 8
+        energy-per-access: 200.0
+        area: 500000
         datawidth: 8
 
     - !Component
-      name: MACC
-      class: intmac
+      name: GlobalBuffer
+      class: SRAM
       attributes:
-        width: 8
+        depth: 1048576
+        width: 64
+        block_size: 8
+        word_bits: 8
+        energy-per-access: 20.0
+        area: 50000
+        datawidth: 8
+
+    - !Container
+      name: PEArray
+      attributes:
+        meshX: 16
+        meshY: 16
+
+    - !Component
+      name: PEArray/PE[<x>][<y>]/LocalSRAM
+      class: SRAM
+      attributes:
+        depth: 2048
+        width: 64
+        block_size: 8
+        word_bits: 8
+        energy-per-access: 1.5
+        area: 1000
+        datawidth: 8
+
+    - !Component
+      name: PEArray/PE[<x>][<y>]/MAC
+      class: mac
+      attributes:
+        datawidth: 16
+        energy-per-op: 0.1
+        area: 200

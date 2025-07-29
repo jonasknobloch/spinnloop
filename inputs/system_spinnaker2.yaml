@@ -1,0 +1,35 @@
+architecture:
+  version: 0.4
+  nodes:
+    - !Container
+      name: System
+
+    - !Component
+      name: DRAM
+      class: DRAM
+      attributes:
+        type: "DLPDR4"
+        width: 64
+        datawidth: 8
+
+    - !Container
+      name: PE
+      spatial: { meshX: 14, meshY: 14 }
+
+    - !Component
+      name: SRAM
+      class: SRAM
+      attributes:
+        depth: 16384
+        width: 64
+        n_banks: 32
+        datawidth: 8
+        read_bandwidth: 16
+        write_bandwidth: 16
+
+    - !Component
+        name: MAC
+        class: intmac
+        attributes:
+          multiplier_width: 8
+          adder_width: 16
