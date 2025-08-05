@@ -1,0 +1,5 @@
+mapping:
+  - target: Buffer
+    type: temporal
+    factors: M=4 N=16 K=4
+    permutation: KNM

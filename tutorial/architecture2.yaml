@@ -1,0 +1,23 @@
+architecture:
+  version: 0.4
+  nodes:
+    - !Container
+      name: PE
+      attributes:
+        latency: "1ns"
+    - !Component
+      name: Buffer
+      class: SRAM
+      attributes:
+        entries: 24*2**20
+        depth: 24*2**16
+        width: 128
+        instances: 1
+        datawidth: 8
+    - !Component
+      name: MACC
+      class: intmac
+      attributes:
+        multiplier_width: 8
+        adder_width: 16
+        global_cycle_seconds: 1
