@@ -3,24 +3,20 @@ architecture:
   nodes:
     - !Container
       name: PE
-      spatial: {meshY: 12, meshX: 12}
-      constraints:
-        spatial: { factors: [ N=2 ] }
-      attributes:
-        latency: "1ns"
+      spatial: {meshY: 2, meshX: 2}
+      # constraints:
+      #   spatial: { factors: [ K=1 ] }
     - !Component
       name: Buffer
       class: SRAM
       attributes:
-        # entries: 24*2**20
         depth: 24*2**16
         width: 128
-        # instances: 12
         datawidth: 8
     - !Component
-      name: MACC
+      name: Accelerator
+      spatial: {meshY: 4, meshX: 16}
       class: intmac
       attributes:
-        multiplier_width: 8
-        adder_width: 16
-        # global_cycle_seconds: 1
+        multiplier_width: 16
+        adder_width: 29
