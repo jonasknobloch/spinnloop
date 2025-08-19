@@ -9,7 +9,7 @@ architecture:
       name: Buffer
       class: SRAM
       attributes:
-        entries: 24*2**20
+        # entries: 24*2**20
         depth: 24*2**16
         width: 128
         instances: 1
@@ -20,4 +20,4 @@ architecture:
       attributes:
         multiplier_width: 8
         adder_width: 16
-        global_cycle_seconds: 1
+        # global_cycle_seconds: 1

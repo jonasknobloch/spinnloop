@@ -12,5 +12,6 @@ def run():
     )
 
     tl.call_model(spec, output_dir="out")
+    # tl.call_mapper(spec, output_dir="out_mapping")
 
 run()
