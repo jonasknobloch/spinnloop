@@ -3,6 +3,9 @@ architecture:
   nodes:
     - !Container
       name: PE
+      spatial: {meshY: 12, meshX: 12}
+      constraints:
+        spatial: { factors: [ N=2 ] }
       attributes:
         latency: "1ns"
     - !Component
@@ -12,7 +15,7 @@ architecture:
         # entries: 24*2**20
         depth: 24*2**16
         width: 128
-        instances: 1
+        # instances: 12
         datawidth: 8
     - !Component
       name: MACC

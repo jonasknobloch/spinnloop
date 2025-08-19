@@ -21,5 +21,5 @@ problem:
 
   instance:
     M: 4
-    N: 16
+    N: 32
     K: 4
