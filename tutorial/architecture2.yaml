@@ -6,6 +6,8 @@ architecture:
       spatial: {meshY: 2, meshX: 2}
       # constraints:
       #   spatial: { factors: [ K=1 ] }
+      #    spatial: { permutation: [K, N, M] }
+      #   spatial: { must_iterate_over_dataspaces: [ B ] }
     - !Component
       name: Buffer
       class: SRAM
@@ -16,6 +18,9 @@ architecture:
     - !Component
       name: Accelerator
       spatial: {meshY: 4, meshX: 16}
+      # constraints:
+        # spatial: { no_iteration_over_dataspaces: [ B ] }
+        # spatial: { permutation: [ N, K, M ] }
       class: intmac
       attributes:
         multiplier_width: 16

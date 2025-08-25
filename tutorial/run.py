@@ -7,6 +7,7 @@ def run():
         "architecture2.yaml",
         "problem.yaml",
         # "mapping.yaml",
+        "mapper.yaml",
         "variables.yaml",
         "intmac.yaml",
     )
