@@ -15,11 +15,11 @@ print(model.config)
 # --- Generic TorchDispatch op tracker (logs everything) ---
 from typing import Any
 
-def _collect_tensors(obj, n=6):
-    # Flatten nested (args, kwargs) and collect up to n tensors
+def _collect_tensors(obj, n: int | None = 6):
+    # Flatten nested (args, kwargs) and collect up to n tensors (or all if n is None)
     stack = [obj]
     out = []
-    while stack and len(out) < n:
+    while stack and (n is None or len(out) < n):
         x = stack.pop(0)
         if isinstance(x, (list, tuple)):
             stack[:0] = list(x)
@@ -34,7 +34,7 @@ class OpTracker(TorchDispatchMode):
 
     Records op name, a few input tensor shapes/dtypes/devices, and a few output shapes.
     """
-    def __init__(self, max_tensors: int = 6):
+    def __init__(self, max_tensors: int | None = None):
         super().__init__()
         self.max_tensors = max_tensors
         # Each event: (name, in_shapes, out_shapes)
@@ -67,9 +67,11 @@ class OpTracker(TorchDispatchMode):
         if torch.is_tensor(out):
             out_shapes = [tuple(out.shape)]
         elif isinstance(out, (list, tuple)):
-            out_shapes = [tuple(t.shape) for t in out if torch.is_tensor(t)][: self.max_tensors]
+            shapes = [tuple(t.shape) for t in out if torch.is_tensor(t)]
+            out_shapes = shapes if self.max_tensors is None else shapes[: self.max_tensors]
         elif isinstance(out, dict):
-            out_shapes = [tuple(t.shape) for t in out.values() if torch.is_tensor(t)][: self.max_tensors]
+            shapes = [tuple(t.shape) for t in out.values() if torch.is_tensor(t)]
+            out_shapes = shapes if self.max_tensors is None else shapes[: self.max_tensors]
 
         self.events.append((name, in_shapes, out_shapes))
         return out
