@@ -36,8 +36,8 @@ class OpTracker(TorchDispatchMode):
     """
     def __init__(self, max_tensors: int | None = None):
         super().__init__()
+
         self.max_tensors = max_tensors
-        # Each event: (name, in_shapes, out_shapes, repetitions)
         self.events: List[Tuple[str, list, list, int]] = []
 
     def __torch_dispatch__(self, func, types, args=(), kwargs=None):
@@ -98,35 +98,24 @@ class OpTracker(TorchDispatchMode):
                 writer.writerow([name, str(in_shapes), str(out_shapes), str(repetitions)])
 
     def group(self, min_window = 4, max_window = 100):
-        """Group repeated sequences into (name, in_shapes, out_shapes, repetitions)"""
-        grouped = []
-        i = 0
-        while i < len(self.events):
-            # Try to find the longest repeated sequence starting at i
-            max_rep = 1
-            max_len = 1
-            for window in range(min_window, max_window + 1):
-                if i + window * 2 > len(self.events):
-                    break
-                seq = self.events[i:i + window]
-                rep = 1
-                while i + (rep + 1) * window <= len(self.events) and self.events[i + rep * window:i + (rep + 1) * window] == seq:
-                    rep += 1
-                if rep > max_rep:
-                    max_rep = rep
-                    max_len = window
-            if max_rep > 1:
-                # We found a repeated sequence
-                name, in_shapes, out_shapes, _ = self.events[i]
-                grouped.append((name, in_shapes, out_shapes, max_rep))
-                i += max_len * max_rep
-            else:
-                # No repetition, just add the single event
-                grouped.append(self.events[i])
-                i += 1
-        self.events = grouped
+        for w in range(min_window, max_window+1):
+            # print(f"### window size {w}\n")
 
+            for i in range(len(self.events)):
+                needle = self.events[0:w]
 
+                for j in range(i + w, len(self.events) - w, w):
+                    # print(f"start={j}, stop={j+w}")
+
+                    candidate = self.events[j:j + w]
+
+                    if len(candidate) != len(needle):
+                        print("Skipping due to length mismatch")
+
+                    if needle == candidate:
+                        print(f"Found repeating pattern of length {w} at {i} and {j}")
+
+        return None
 
 
 # --- Demo: track all matmul-like ops for a single forward pass ---
@@ -137,6 +126,6 @@ with OpTracker() as ot:
     with torch.inference_mode():
         _ = model(**inputs)
 print(ot.report())
-ot.group(min_window=4, max_window=100)
+ot.group(min_window=4, max_window=110)
 ot.to_tsv("ops.tsv")
 print("Saved ops.tsv")
