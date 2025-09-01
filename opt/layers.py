@@ -5,7 +5,7 @@ from typing import List, Tuple
 
 model_name = "facebook/opt-125m"
 tok = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.float32)
+model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.float32, attn_implementation="eager")
 model.eval()
 
 print(model.__class__.__name__)
