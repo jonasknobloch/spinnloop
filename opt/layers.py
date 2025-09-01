@@ -97,8 +97,9 @@ class OpTracker(TorchDispatchMode):
 
 
 # --- Demo: track all matmul-like ops for a single forward pass ---
-sample_text = "Hello world"
-inputs = tok(sample_text, return_tensors="pt")
+max_len = model.config.max_position_embeddings
+sample_text = " ".join(["Hello"] * max_len)
+inputs = tok(sample_text, return_tensors="pt", truncation=True, max_length=max_len)
 with OpTracker() as ot:
     with torch.inference_mode():
         _ = model(**inputs)
