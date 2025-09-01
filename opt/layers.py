@@ -97,25 +97,25 @@ class OpTracker(TorchDispatchMode):
             for name, in_shapes, out_shapes, repetitions in self.events:
                 writer.writerow([name, str(in_shapes), str(out_shapes), str(repetitions)])
 
-    def group(self, min_window = 4, max_window = 100):
-        for w in range(min_window, max_window+1):
-            # print(f"### window size {w}\n")
-
-            for i in range(len(self.events)):
-                needle = self.events[0:w]
-
-                for j in range(i + w, len(self.events) - w, w):
-                    # print(f"start={j}, stop={j+w}")
-
-                    candidate = self.events[j:j + w]
-
-                    if len(candidate) != len(needle):
-                        print("Skipping due to length mismatch")
-
-                    if needle == candidate:
-                        print(f"Found repeating pattern of length {w} at {i} and {j}")
-
-        return None
+    # def group(self, min_window = 4, max_window = 100):
+    #     for w in reversed(range(min_window, max_window+1)):
+    #         print(f"### window size {w}")
+    #
+    #         for i in range(len(self.events) - w):
+    #             needle = self.events[0:w]
+    #
+    #             for j in range(i + w, len(self.events) - w, w):
+    #                 # print(f"start={j}, stop={j+w}")
+    #
+    #                 candidate = self.events[j:j + w]
+    #
+    #                 if len(candidate) != len(needle):
+    #                     print("Skipping due to length mismatch")
+    #
+    #                 if needle == candidate:
+    #                     print(f"Found repeating pattern of length {w} at {i} and {j}")
+    #
+    #     return None
 
 
 # --- Demo: track all matmul-like ops for a single forward pass ---
@@ -126,6 +126,5 @@ with OpTracker() as ot:
     with torch.inference_mode():
         _ = model(**inputs)
 print(ot.report())
-ot.group(min_window=4, max_window=110)
 ot.to_tsv("ops.tsv")
 print("Saved ops.tsv")
