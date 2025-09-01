@@ -87,6 +87,14 @@ class OpTracker(TorchDispatchMode):
             lines.append(f"{name}: {cnt}")
         return "\n".join(lines)
 
+    def to_tsv(self, path: str = "ops.tsv"):
+        import csv
+        with open(path, "w", newline="") as f:
+            writer = csv.writer(f, delimiter="\t")
+            writer.writerow(["name", "in", "out"])
+            for name, in_shapes, out_shapes in self.events:
+                writer.writerow([name, str(in_shapes), str(out_shapes)])
+
 
 # --- Demo: track all matmul-like ops for a single forward pass ---
 sample_text = "Hello world"
@@ -95,3 +103,5 @@ with OpTracker() as ot:
     with torch.inference_mode():
         _ = model(**inputs)
 print(ot.report())
+ot.to_tsv("ops.tsv")
+print("Saved ops.tsv")
