@@ -30,7 +30,7 @@ architecture:
     # - !Container # TODO needs to be component
     #   name: Dummy
     #   constraints:
-    #     temporal: { factors: [ L=1, D=1, E=4 ] }
+    #     temporal: { factors: [ L=1, D=1, E=4 ] } # TOD E in buffer to 192
     - !Component
       name: Accelerator
       spatial: {meshY: 4, meshX: 16}
