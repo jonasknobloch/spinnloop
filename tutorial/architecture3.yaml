@@ -24,6 +24,7 @@ architecture:
       constraints:
         temporal:
           factors: [ L=1, D=1, E=768 ] # TODO 192 * 4 since (4, 4) (4, 16) matmul is 64 multiply adds
+                                       # TODO No lol its 64 * 4 multiply adds
       # constraints:
         # temporal: { factors: [ L=1, D=1, E=1 ], permutation: [ E, L, D ] }
          #temporal: { factors: [ L=1, D=1, E=192 ], permutation: [ E, L, D ] }
