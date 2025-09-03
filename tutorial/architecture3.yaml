@@ -23,11 +23,14 @@ architecture:
         datawidth: 8
       constraints:
         temporal:
-          factors: [ L=1, D=1, E=768 ] # TODO 192 * 4 since (4, 4) (4, 16) matmul is 64 multiply adds
-                                       # TODO No lol its 64 * 4 multiply adds
+          factors: [ L=1, D=1, E=768 ] # d_model is 768 -> we partition into 192 parts -> (4,4)(4,16) is 64 * 4 multiply adds -> 192 * 4 = 768
       # constraints:
         # temporal: { factors: [ L=1, D=1, E=1 ], permutation: [ E, L, D ] }
          #temporal: { factors: [ L=1, D=1, E=192 ], permutation: [ E, L, D ] }
+    # - !Container # TODO needs to be component
+    #   name: Dummy
+    #   constraints:
+    #     temporal: { factors: [ L=1, D=1, E=4 ] }
     - !Component
       name: Accelerator
       spatial: {meshY: 4, meshX: 16}

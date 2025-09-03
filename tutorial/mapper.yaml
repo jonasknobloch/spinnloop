@@ -1,2 +1,3 @@
 mapper:
   timeout: 1000
+  diagnostics: true

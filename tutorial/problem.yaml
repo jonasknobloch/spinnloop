@@ -3,23 +3,23 @@
 problem:
   shape:
     name: "gemm_ABZ"
-    dimensions: [ M, N, K ]
+    dimensions: [ L, D, E ]
     data_spaces:
-      - name: A
+      - name: Inputs
         projection:
-          - [ [ M ] ]
-          - [ [ K ] ]
-      - name: B
+          - [ [ L ] ]
+          - [ [ E ] ]
+      - name: Weights
         projection:
-          - [ [ N ] ]
-          - [ [ K ] ]
+          - [ [ E ] ]
+          - [ [ D ] ]
       - name: Z
         projection:
-          - [ [ M ] ]
-          - [ [ N ] ]
+          - [ [ L ] ]
+          - [ [ D ] ]
         read_write: True
 
   instance:
-    M: 4
-    N: 64
-    K: 4
+    L: 64 # 2048
+    D: 3072 # 3072
+    E: 768 # 768
