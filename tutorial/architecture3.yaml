@@ -10,7 +10,7 @@ architecture:
         datawidth: 8
       constraints:
         temporal:
-          factors: [ D=192, L=16, E=192] # TODO E = 1
+          factors: [ D=192, L=16, E=1]
     - !Container
       name: PE
       # spatial: {meshY: 2, meshX: 2}
@@ -23,7 +23,7 @@ architecture:
         datawidth: 8
       constraints:
         temporal:
-          factors: [ L=1, D=1, E=4 ] # TODO E = 192 -> where should temporal fanout happen?
+          factors: [ L=1, D=1, E=768 ] # TODO 192 * 4 since (4, 4) (4, 16) matmul is 64 multiply adds
       # constraints:
         # temporal: { factors: [ L=1, D=1, E=1 ], permutation: [ E, L, D ] }
          #temporal: { factors: [ L=1, D=1, E=192 ], permutation: [ E, L, D ] }
