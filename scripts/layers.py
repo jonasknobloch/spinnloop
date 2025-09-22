@@ -165,7 +165,9 @@ class Problem:
         return;
 
     def serialize(self, start = "", end = ""):
-        os.makedirs("layers", exist_ok=True)
+        out_dir = "../layer_shapes/opt"
+
+        os.makedirs(out_dir, exist_ok=True)
 
         template = """{{include_text('../problem_base.yaml')}}
 problem:
@@ -196,7 +198,7 @@ problem:
             }
 
             content = template.format(**cfg)
-            name = os.path.join("layers", f"{i}.yaml")
+            name = os.path.join(out_dir, f"{i:03d}.yaml")
             with open(name, "w") as f:
                 f.write(content)
 
@@ -220,7 +222,7 @@ for i, evt in enumerate(prof.events()):
     # if evt.name.startswith("UserAnnotation#"):
     #     print(evt.name)
 
-p.serialize("L0:layer", "L1:layer")
+p.serialize("L0:layer", "L11:layer")
 
 # events = prof.key_averages()
 
