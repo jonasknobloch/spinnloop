@@ -4,7 +4,7 @@ import pytimeloop.timeloopfe.v4 as tl
 
 def run():
     spec = tl.Specification.from_yaml_files(
-        "architecture3.yaml",
+        "architecture5.yaml",
         "problem.yaml",
         # "mapping.yaml",
         "mapper.yaml",
