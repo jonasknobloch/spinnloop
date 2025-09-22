@@ -1,3 +1,5 @@
+import os
+
 import torch
 from enum import Enum
 
@@ -55,7 +57,7 @@ def install_layer_scopes(model):
         def pre_layer(mod, inputs, idx=idx):
             rf = record_function(f"L{idx}:layer")
             mod.__dict__["_rf_layer"] = rf
-            rf.__enter__()                 # enter range
+            rf.__enter__()  # enter range
             # DO NOT return anything
 
         def post_layer(mod, inputs, output, idx=idx):
@@ -114,21 +116,21 @@ class Problem:
 
         if name[0] == "L":
             self.events_layers.append((idx, event))
-            return # skip layer annotations
+            return  # skip layer annotations
 
         shapes = getattr(evt, "input_shapes", None)
 
         if name == Key.MATMUL:
             self.events_handled.append((idx, event))
-            return # lowered to batched matmul
+            return  # lowered to batched matmul
 
         if name == Key.BMM:
             # TODO verify last handled event is matmul with matching shape
             # 1781 aten::bmm  shapes=[[12, 1024, 64], [12, 64, 1024]]
 
             assert len(shapes) == 2
-            assert len(shapes[0]) == 3 # 12x operand (sequence_length, head_dim)
-            assert len(shapes[1]) == 3 # 12x operand (head_dim, sequence_length)
+            assert len(shapes[0]) == 3  # 12x operand (sequence_length, head_dim)
+            assert len(shapes[1]) == 3  # 12x operand (head_dim, sequence_length)
 
             # TODO option to combine into larger matmuls
 
@@ -140,16 +142,16 @@ class Problem:
 
         if name == Key.LINEAR:
             self.events_handled.append((idx, event))
-            return # lowered to add matmul
+            return  # lowered to add matmul
 
         if name == Key.ADDMM:
             # TODO verify last handled event is linear with matching shape
             # 2064 aten::addmm  shapes=[[768], [1024, 3072], [3072, 768], [], []]
 
             assert len(shapes) == 5
-            assert len(shapes[0]) == 1 # bias vector
-            assert len(shapes[1]) == 2 # operand (sequence_length x hidden_dim)
-            assert len(shapes[2]) == 2 # operand (hidden_dim x model_dim)
+            assert len(shapes[0]) == 1  # bias vector
+            assert len(shapes[1]) == 2  # operand (sequence_length x hidden_dim)
+            assert len(shapes[2]) == 2  # operand (hidden_dim x model_dim)
             assert len(shapes[3]) == 0
             assert len(shapes[4]) == 0
 
@@ -162,24 +164,42 @@ class Problem:
 
         return;
 
-    def collect_gemms(self):
-        idx_lower = 0
-        idx_upper = 0
+    def serialize(self, start = "", end = ""):
+        os.makedirs("layers", exist_ok=True)
 
-        for (idx, event) in self.events_layers:
-            if event.name == "L0:layer":
-                idx_lower = idx
-            if event.name == "L1:layer":
-                idx_upper = idx
-                break
+        template = """{{include_text('../problem_base.yaml')}}
+problem:
+  <<<: *problem_base
+  instance: {{C: {C}, M: {M}, P: {P}}}
+"""
+        idx_lower = -1
+        idx_upper = -1
 
-        for (idx, m, n, k) in self.matmuls:
-            if idx < idx_lower:
+        if start != "" or end != "":
+            for (idx, event) in self.events_layers:
+                if event.name == start:
+                    idx_lower = idx
+                if event.name == end:
+                    idx_upper = idx
+                    break
+
+        for (i, (idx, m, n, k)) in enumerate(self.matmuls):
+            if idx_lower > -1 and idx < idx_lower:
                 continue
-            if idx > idx_upper:
+            if idx_upper > -1 and idx > idx_upper:
                 break
 
-            print(idx, m, n, k)
+            cfg = {
+                "C": m,
+                "M": n,
+                "P": k,
+            }
+
+            content = template.format(**cfg)
+            name = os.path.join("layers", f"{i}.yaml")
+            with open(name, "w") as f:
+                f.write(content)
+
 
 model = OPTModel.from_pretrained("facebook/opt-125m").eval()
 install_layer_scopes(model)
@@ -200,7 +220,7 @@ for i, evt in enumerate(prof.events()):
     # if evt.name.startswith("UserAnnotation#"):
     #     print(evt.name)
 
-p.collect_gemms()
+p.serialize("L0:layer", "L1:layer")
 
 # events = prof.key_averages()
 
