@@ -23,3 +23,14 @@ SINGLE CPU only run -> identify transformer blocks
 spinnloop
 
 
+```bash
+git submodule add https://github.com/Accelergy-Project/pytorch2timeloop-converter vendor/pytorch2timeloop-converter
+git submodule update --init --recursive
+
+conda create --prefix ./env python=3.11
+conda activate ./env
+
+pip install -r vendor/pytorch2timeloop-converter/requirements.txt
+pip install -e ./vendor/pytorch2timeloop-converter
+ ```
+

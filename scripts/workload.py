@@ -8,15 +8,12 @@ model = OPTModel.from_pretrained("facebook/opt-125m")
 tokenizer = AutoTokenizer.from_pretrained("facebook/opt-125m")
 model.eval()
 
-# Prepare a sample input
-text = "Hello world"
-inputs = tokenizer(text, return_tensors="pt")
-sample_input = (inputs["input_ids"],)
+x = torch.randint(0, model.config.vocab_size, (1, 1024))
 
 # Convert the model using a sample input
 convert_model_with_sample_input(
     model=model,
-    sample_input=sample_input,
+    sample_input=x,
     batch_size=1,
     model_name="opt-125m",
     save_dir=Path("./timeloop_output"),
