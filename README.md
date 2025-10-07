@@ -32,5 +32,9 @@ conda activate ./env
 
 pip install -r vendor/pytorch2timeloop-converter/requirements.txt
 pip install -e ./vendor/pytorch2timeloop-converter
+
+pip install pandas
+pip install openpyxl
  ```
 
+2025-07-04__time_measurements__large_matmul__3072-512-768__only_1_dram_transfer_per_weight_tile__and__input_tile
