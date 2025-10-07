@@ -1,12 +1,9 @@
-from transformers import OPTModel, AutoTokenizer
+from transformers import GPT2Model
 from pytorch2timeloop import convert_model_with_sample_input
 from pathlib import Path
 import torch
 
-# Load the model and tokenizer
-model = OPTModel.from_pretrained("facebook/opt-125m")
-tokenizer = AutoTokenizer.from_pretrained("facebook/opt-125m")
-model.eval()
+model = GPT2Model.from_pretrained("gpt2")
 
 x = torch.randint(0, model.config.vocab_size, (1, 1024))
 
@@ -15,7 +12,7 @@ convert_model_with_sample_input(
     model=model,
     sample_input=x,
     batch_size=1,
-    model_name="opt-125m",
+    model_name="gpt2",
     save_dir=Path("./timeloop_output"),
     exception_module_names=[]
 )

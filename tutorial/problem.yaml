@@ -20,6 +20,6 @@ problem:
         read_write: True
 
   instance:
-    L: 1024 # 2048
+    L: 512 # 2048
     D: 3072 # 3072
     E: 768 # 768

@@ -6,8 +6,8 @@ import plotly.figure_factory as ff
 
 # xls = pd.read_excel("../data/time_measurements__01__qkv_+_att-out_linear__512x768_768x768_512x768.xlsx", sheet_name=None)
 # xls = pd.read_excel("../data/time_measurements__02__mlp_linear_1__512x768_768x3072_512x3072.xlsx", sheet_name=None)
-# xls = pd.read_excel("../data/time_measurements__03__mlp_linear_2__512x3072_3072x768_512x768.xlsx", sheet_name=None)
-xls = pd.read_excel("../data/time_measurements__04__bmm_1__512x64_64x512_512x512.xlsx", sheet_name=None)
+xls = pd.read_excel("../data/time_measurements__03__mlp_linear_2__512x3072_3072x768_512x768.xlsx", sheet_name=None)
+# xls = pd.read_excel("../data/time_measurements__04__bmm_1__512x64_64x512_512x512.xlsx", sheet_name=None)
 # xls = pd.read_excel("../data/time_measurements__04__bmm_2__512x512_512x64_512x64.xlsx", sheet_name=None)
 
 # print(xls.keys())
