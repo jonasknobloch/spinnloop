@@ -1,0 +1,14 @@
+[project]
+name = "spinnloop"
+version = "0.1.0"
+description = "Command-line tool for spinnloop"
+requires-python = ">=3.11"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+spinnloop = "spinnloop.cli:app"
