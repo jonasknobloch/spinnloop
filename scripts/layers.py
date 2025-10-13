@@ -1,4 +1,5 @@
 import os
+import json
 
 import torch
 from enum import Enum
@@ -16,6 +17,8 @@ class Key(str, Enum):
     BMM = "aten::bmm"
     LINEAR = "aten::linear"
     MATMUL = "aten::matmul"
+    SOFTMAX = "aten::softmax"
+    SOFTMAX_INTERNAL = "aten::_softmax"
     # MM = "aten::mm"
 
 
@@ -52,6 +55,59 @@ from transformers.models.opt.modeling_opt import OPTAttention
 def install_layer_scopes(model):
     layers = model.decoder.layers
 
+    # --- Global scopes outside decoder layers ---
+    etok = getattr(model.decoder, "embed_tokens", None)
+    if etok is not None:
+        def pre_etok(mod, inputs):
+            rf = record_function("G:embed_tokens")
+            mod.__dict__["_rf_etok"] = rf
+            rf.__enter__()
+        def post_etok(mod, inputs, output):
+            rf = mod.__dict__.pop("_rf_etok", None)
+            if rf is not None:
+                rf.__exit__(None, None, None)
+        etok.register_forward_pre_hook(pre_etok)
+        etok.register_forward_hook(post_etok)
+
+    epos = getattr(model.decoder, "embed_positions", None)
+    if epos is not None:
+        def pre_epos(mod, inputs):
+            rf = record_function("G:embed_positions")
+            mod.__dict__["_rf_epos"] = rf
+            rf.__enter__()
+        def post_epos(mod, inputs, output):
+            rf = mod.__dict__.pop("_rf_epos", None)
+            if rf is not None:
+                rf.__exit__(None, None, None)
+        epos.register_forward_pre_hook(pre_epos)
+        epos.register_forward_hook(post_epos)
+
+    dnorm = getattr(model.decoder, "final_layer_norm", None)
+    if dnorm is not None:
+        def pre_dnorm(mod, inputs):
+            rf = record_function("G:final_layer_norm")
+            mod.__dict__["_rf_dnorm"] = rf
+            rf.__enter__()
+        def post_dnorm(mod, inputs, output):
+            rf = mod.__dict__.pop("_rf_dnorm", None)
+            if rf is not None:
+                rf.__exit__(None, None, None)
+        dnorm.register_forward_pre_hook(pre_dnorm)
+        dnorm.register_forward_hook(post_dnorm)
+
+    lmh = getattr(model, "lm_head", None)
+    if lmh is not None:
+        def pre_lmh(mod, inputs):
+            rf = record_function("G:lm_head")
+            mod.__dict__["_rf_lmh"] = rf
+            rf.__enter__()
+        def post_lmh(mod, inputs, output):
+            rf = mod.__dict__.pop("_rf_lmh", None)
+            if rf is not None:
+                rf.__exit__(None, None, None)
+        lmh.register_forward_pre_hook(pre_lmh)
+        lmh.register_forward_hook(post_lmh)
+
     for idx, layer in enumerate(layers):
         # --- Layer scope ---
         def pre_layer(mod, inputs, idx=idx):
@@ -84,6 +140,44 @@ def install_layer_scopes(model):
             attn.register_forward_pre_hook(pre_attn)
             attn.register_forward_hook(post_attn)
 
+            # Projections inside attention
+            for proj_name in ("q_proj", "k_proj", "v_proj", "out_proj"):
+                proj = getattr(attn, proj_name, None)
+                if proj is None:
+                    continue
+
+                def pre_proj(mod, inputs, idx=idx, proj_name=proj_name):
+                    rf = record_function(f"L{idx}:attn.{proj_name}")
+                    mod.__dict__[f"_rf_attn_{proj_name}"] = rf
+                    rf.__enter__()
+
+                def post_proj(mod, inputs, output, idx=idx, proj_name=proj_name):
+                    rf = mod.__dict__.pop(f"_rf_attn_{proj_name}", None)
+                    if rf is not None:
+                        rf.__exit__(None, None, None)
+
+                proj.register_forward_pre_hook(pre_proj)
+                proj.register_forward_hook(post_proj)
+
+        # --- Per-layer norms ---
+        for norm_name in ("self_attn_layer_norm", "final_layer_norm"):
+            norm = getattr(layer, norm_name, None)
+            if norm is None:
+                continue
+
+            def pre_norm(mod, inputs, idx=idx, norm_name=norm_name):
+                rf = record_function(f"L{idx}:{norm_name}")
+                mod.__dict__[f"_rf_{norm_name}"] = rf
+                rf.__enter__()
+
+            def post_norm(mod, inputs, output, idx=idx, norm_name=norm_name):
+                rf = mod.__dict__.pop(f"_rf_{norm_name}", None)
+                if rf is not None:
+                    rf.__exit__(None, None, None)
+
+            norm.register_forward_pre_hook(pre_norm)
+            norm.register_forward_hook(post_norm)
+
         # --- FFN scope (optional) ---
         for name in ("fc1", "fc2"):
             sub = getattr(layer, name, None)
@@ -106,22 +200,39 @@ def install_layer_scopes(model):
 
 class Problem:
     matmuls = []
+    softmaxes = []
+    trace = []
 
     events_handled = []
     events_unhandled = []
     events_layers = []
+    current_layer = None
 
     def eval_event(self, event, idx):
         name = event.name
 
         if name[0] == "L":
             self.events_layers.append((idx, event))
+            self.current_layer = name
+            # trace layer marker
+            self.trace.append((self.current_layer, name, None))
             return  # skip layer annotations
 
-        shapes = getattr(evt, "input_shapes", None)
+        shapes = getattr(event, "input_shapes", None)
+
+        if name == Key.SOFTMAX or name == Key.SOFTMAX_INTERNAL:
+            # Expect a single tensor input; non-tensor args (dim, dtype) are not recorded in input_shapes
+            inp_shape = None
+            if shapes is not None and len(shapes) >= 1:
+                inp_shape = shapes[0]
+            self.softmaxes.append((idx, inp_shape))
+            self.events_handled.append((idx, event))
+            self.trace.append((self.current_layer, name, inp_shape))
+            return
 
         if name == Key.MATMUL:
             self.events_handled.append((idx, event))
+            self.trace.append((self.current_layer, name, shapes))
             return  # lowered to batched matmul
 
         if name == Key.BMM:
@@ -138,10 +249,12 @@ class Problem:
                 self.matmuls.append((idx, shapes[0][1], shapes[0][2], shapes[1][2]))
 
             self.events_handled.append((idx, event))
+            self.trace.append((self.current_layer, name, shapes))
             return
 
         if name == Key.LINEAR:
             self.events_handled.append((idx, event))
+            self.trace.append((self.current_layer, name, shapes))
             return  # lowered to add matmul
 
         if name == Key.ADDMM:
@@ -158,16 +271,28 @@ class Problem:
             self.matmuls.append((idx, shapes[1][0], shapes[1][1], shapes[2][1]))
 
             self.events_handled.append((idx, event))
+            self.trace.append((self.current_layer, name, shapes))
             return
 
         self.events_unhandled.append((idx, event))
-
-        return;
+        self.trace.append((self.current_layer, name, shapes))
+        return
 
     def serialize(self, start = "", end = ""):
         out_dir = "../layer_shapes/opt"
 
         os.makedirs(out_dir, exist_ok=True)
+
+        # write sequential trace
+        trace_path = os.path.join(out_dir, "trace.tsv")
+        with open(trace_path, "w") as f:
+            f.write("layer\tkey\tinput\n")
+            for (layer, key, inp) in self.trace:
+                try:
+                    inp_str = json.dumps(inp)
+                except Exception:
+                    inp_str = repr(inp)
+                f.write(f"{layer}\t{key}\t{inp_str}\n")
 
         template = """{{include_text('../problem_base.yaml')}}
 problem:
@@ -206,7 +331,7 @@ problem:
 model = OPTModel.from_pretrained("facebook/opt-125m").eval()
 install_layer_scopes(model)
 
-x = torch.randint(0, model.config.vocab_size, (1, 1024))
+x = torch.randint(0, model.config.vocab_size, (1, 512))
 
 with profile(activities=[ProfilerActivity.CPU], record_shapes=True) as prof:
     with torch.inference_mode():
