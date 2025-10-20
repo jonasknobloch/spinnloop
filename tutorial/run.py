@@ -6,14 +6,16 @@ def run():
     spec = tl.Specification.from_yaml_files(
         "architecture12.yaml",
         "problem.yaml",
-        # "mapping.yaml",
-        "mapper.yaml",
+        "mapping3.yaml",
+        # "mapper.yaml",
         "variables.yaml",
         "intmac.yaml",
     )
 
-    # tl.call_model(spec, output_dir="out")
-    tl.call_mapper(spec, output_dir="out_mapping")
+    # spec.mapspace.template = 'uber'
+
+    tl.call_model(spec, output_dir="out")
+    # tl.call_mapper(spec, output_dir="out_mapping")
 
 run()
 
