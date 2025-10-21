@@ -8,8 +8,8 @@ architecture:
         depth: 24*2**16 # TODO
         width: 1024
         datawidth: 8
-        read_bandwidth: 1 # TODO
-        write_bandwidth: 1 # TODO
+        # read_bandwidth: 1 # TODO
+        # write_bandwidth: 1 # TODO
       # constraints:
       #   temporal:
       #     factors: [ D=3, L=1, E=1]
@@ -26,11 +26,11 @@ architecture:
         depth: 768
         width: 128
         datawidth: 32
-        read_bandwidth: 128
-        write_bandwidth: 128
+        # read_bandwidth: 128
+        # write_bandwidth: 128
       constraints:
-      #   temporal:
-      #     factors: [ D=4, L=16, E=768 ]
+        #   temporal:
+        #     factors: [ D=4, L=16, E=768 ]
         dataspace:
           bypass: [Inputs, Weights, Z] # TODO keep outputs in register?
     - !Component

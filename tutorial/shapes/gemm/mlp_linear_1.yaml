@@ -1,0 +1,25 @@
+# https://github.com/NVlabs/timeloop/blob/master/problem-shapes/gemm_ABZ.yaml
+
+problem:
+  shape:
+    name: "gemm_ABZ"
+    dimensions: [ L, D, E ]
+    data_spaces:
+      - name: Inputs
+        projection:
+          - [ [ L ] ]
+          - [ [ E ] ]
+      - name: Weights
+        projection:
+          - [ [ E ] ]
+          - [ [ D ] ]
+      - name: Z
+        projection:
+          - [ [ L ] ]
+          - [ [ D ] ]
+        read_write: True
+
+  instance:
+    L: 512  # A
+    D: 3072 # B
+    E: 768  # shared

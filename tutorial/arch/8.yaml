@@ -8,17 +8,11 @@ architecture:
         depth: 24*2**16 # TODO
         width: 1024
         datawidth: 8
-        read_bandwidth: 1 # TODO
-        write_bandwidth: 1 # TODO
-      # constraints:
-      #   temporal:
-      #     factors: [ D=3, L=1, E=1]
+        # read_bandwidth: 1 # TODO
+        # write_bandwidth: 1 # TODO
     - !Container
       name: PE
-      spatial: {meshY: 1, meshX: 128}
-      # constraints:
-      #   spatial:
-      #     factors: [ D=16, L=8, E=1 ]
+      spatial: {meshY: 1, meshX: 8}
     - !Component
       name: Buffer
       class: SRAM
@@ -26,11 +20,9 @@ architecture:
         depth: 768
         width: 128
         datawidth: 32
-        read_bandwidth: 128
-        write_bandwidth: 128
+        # read_bandwidth: 128
+        # write_bandwidth: 128
       constraints:
-      #   temporal:
-      #     factors: [ D=4, L=16, E=768 ]
         dataspace:
           bypass: [Inputs, Weights, Z] # TODO keep outputs in register?
     - !Component
