@@ -17,14 +17,27 @@ architecture:
       name: Buffer
       class: SRAM
       attributes:
-        depth: 768
-        width: 128
+        depth: 768 # without * 32 I get 3072 size which cant fit 98304
+        width: 128*32
         datawidth: 32
-        # read_bandwidth: 128
-        # write_bandwidth: 128
+        read_bandwidth: 20
+        write_bandwidth: 20 # 20 for full uitlizion
       constraints:
         dataspace:
-          bypass: [Inputs, Weights, Z] # TODO keep outputs in register?
+          keep: [Inputs, Weights]
+          bypass: [Z] # TODO keep outputs in register?
+     #- !Component #  TODO check if ths can be handled in the intmac itself.
+     #  name: Accumulator
+     #  class: regfile
+     #  attributes:
+     #    depth: 64*32
+     #    width: 64*32
+     #    datawidth: 32
+     #    read_bandwidth: 2 # 157287
+     #    write_bandwidth: 20
+     #  constraints:
+     #    dataspace:
+     #      keep_only: [Z]
     - !Component
       name: Accelerator
       spatial: {meshY: 4, meshX: 16}
@@ -32,3 +45,4 @@ architecture:
       attributes:
         multiplier_width: 16
         adder_width: 29
+        # network_fill_latency ??

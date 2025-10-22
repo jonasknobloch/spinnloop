@@ -3,11 +3,12 @@ import os
 
 import pytimeloop.timeloopfe.v4 as tl
 
-def run():
-    os.environ["TIMELOOP_ENABLE_TRACING"] = "1"
-    # os.environ["TIMELOOP_DISABLE_TEMPORAL_EXTRAPOLATION"] = "1"
-    # os.environ["TIMELOOP_DISABLE_SPATIAL_EXTRAPOLATION"] = "1"
+os.environ["TIMELOOP_ENABLE_TRACING"] = "1"
+# os.environ["TIMELOOP_DISABLE_TEMPORAL_EXTRAPOLATION"] = "1"
+# os.environ["TIMELOOP_DISABLE_SPATIAL_EXTRAPOLATION"] = "1"
 
+
+def run():
     spec = tl.Specification.from_yaml_files(
         "architecture12.yaml",
         "problem.yaml",
@@ -16,6 +17,11 @@ def run():
         "variables.yaml",
         "intmac.yaml",
     )
+
+    baz = spec.architecture.nodes[1].spatial.meshX
+    l = spec.problem.instance['L']
+    d = spec.problem.instance['D']
+    e = spec.problem.instance['E']
 
     # spec.mapspace.template = 'uber'
 
@@ -147,13 +153,13 @@ def bar():
     print(f"Total static: {total_ms:.2f} ms")
 
 
-# qkv_with_linear()
+qkv_with_linear()
 # mlp_linear_1()
 # mlp_linear_2()
 # bmm1()
 # bmm2()
 
-foo()
+# foo()
 # bar()
 
 # run()

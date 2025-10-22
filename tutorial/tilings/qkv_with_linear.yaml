@@ -1,18 +1,18 @@
 mapping:
-  - factors: [D=1, L=1, E=1]
-    permutation: [E, L, D]
+  - factors: [N=1, M=1, K=1]
+    permutation: [K, M, N]
     target: DRAM
     type: temporal
-  - factors: [D=12, L=8, E=1]
-    permutation: [E, L, D]
+  - factors: [N=12, M=8, K=1]
+    permutation: [K, M, N]
     target: PE
     type: spatial
-  - factors: [D=4, L=16, E=768]
-    permutation: [E, L, D]
+  - factors: [N=4, M=16, K=768]
+    permutation: [K, M, N]
     target: Buffer
     type: temporal
-  - factors: [D=16, L=4, E=1]
-    permutation: [D, L, E]
+  - factors: [N=16, M=4, K=1]
+    permutation: [N, M, K]
     target: Accelerator
     type: spatial
     split: 1
