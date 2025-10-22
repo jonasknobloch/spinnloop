@@ -4,7 +4,7 @@ import os
 import pytimeloop.timeloopfe.v4 as tl
 
 def run():
-    # os.environ["TIMELOOP_ENABLE_TRACING"] = "1"
+    os.environ["TIMELOOP_ENABLE_TRACING"] = "1"
     # os.environ["TIMELOOP_DISABLE_TEMPORAL_EXTRAPOLATION"] = "1"
     # os.environ["TIMELOOP_DISABLE_SPATIAL_EXTRAPOLATION"] = "1"
 
@@ -91,11 +91,11 @@ def foo():
     executions_bmm1 = 12
     executions_bmm2 = 12
 
-    cycles_qkv_with_linear = 312606720
-    cycles_mlp_linear_1 = 1248854016
-    cycles_mlp_linear_2 = 1235877888
-    cycles_bmm1 = 18087936
-    cycles_bmm2 = 18317312
+    # cycles_qkv_with_linear = 312606720
+    # cycles_mlp_linear_1 = 1248854016
+    # cycles_mlp_linear_2 = 1235877888
+    # cycles_bmm1 = 18087936
+    # cycles_bmm2 = 18317312
 
     cycles_qkv_with_linear = 49152
     cycles_mlp_linear_1 = 147456
@@ -115,7 +115,7 @@ def foo():
             + (cycles_bmm2 * executions_bmm2)
     )
 
-    clock_hz = 350e6  # 350 MHz
+    clock_hz = 150e6  # 150 MHz
 
     total_us = (total_cycles / clock_hz) * 1e6
     total_ms = (total_cycles / clock_hz) * 1e3
@@ -136,12 +136,15 @@ def bar():
     latency_add_us = 0.02
 
     total_us = (
-        (latency_layer_norm_us * 24)
-        + (latency_softmax_us * 12)
-        + (latency_add_us * 24)
+        (latency_layer_norm_us * 24 * 512 * 768) # AxB
+        + (latency_softmax_us * 12 * 512 * 512)
+        + (latency_add_us * 24 * 512 * 768)
     )
 
+    total_ms = total_us * 1e-3
+
     print(f"Total static: {total_us:.2f} µs")
+    print(f"Total static: {total_ms:.2f} ms")
 
 
 # qkv_with_linear()
@@ -151,5 +154,6 @@ def bar():
 # bmm2()
 
 foo()
-bar()
+# bar()
 
+# run()
