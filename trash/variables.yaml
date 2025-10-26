@@ -1,9 +1,0 @@
-variables:
-  version: 0.4
-  global_cycle_seconds: 1e-9
-  technology: 40 # TODO 22nm
-
-  # defaults for BERT-large
-  EMBEDDING: 768
-  SEQ_LENGTH: 2048 # 2048
-  FF_DIM: 3072
