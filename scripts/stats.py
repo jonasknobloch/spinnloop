@@ -83,4 +83,5 @@ fig.update_layout(
     height=30 * 128
 )
 
-fig.show()
+# fig.show()
+fig.write_html("../out/stats.html", include_plotlyjs="cdn", auto_open=False)
