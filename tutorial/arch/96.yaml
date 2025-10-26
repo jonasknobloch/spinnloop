@@ -7,9 +7,9 @@ architecture:
       attributes:
         depth: 24*2**16 # TODO
         width: 1024
-        datawidth: 8
-        # read_bandwidth: 1 # TODO
-        # write_bandwidth: 1 # TODO
+        datawidth: 128
+        read_bandwidth: 10 # TODO
+        write_bandwidth: 10 # TODO
     - !Container
       name: PE
       spatial: {meshY: 1, meshX: 96}
@@ -19,13 +19,15 @@ architecture:
       attributes:
         depth: 768 # without * 32 I get 3072 size which cant fit 98304
         width: 128*32
+        # block_size: 4
         datawidth: 32
-        read_bandwidth: 20
-        write_bandwidth: 20 # 20 for full uitlizion
+        read_bandwidth: 4 # number of words per cycle
+        write_bandwidth: 4 # 20 for full uitlizion
+        # allow_overbooking: true
       constraints:
         dataspace:
           keep: [Inputs, Weights]
-          bypass: [Z] # TODO keep outputs in register?
+          bypass: [Z] # TODO keep outputs in register? I guess it should still end up hear since we do not read from accumulator
      #- !Component #  TODO check if ths can be handled in the intmac itself.
      #  name: Accumulator
      #  class: regfile

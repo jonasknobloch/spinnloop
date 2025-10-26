@@ -51,151 +51,64 @@ from torch.profiler import profile, ProfilerActivity, record_function
 from transformers import OPTModel
 from transformers.models.opt.modeling_opt import OPTAttention
 
+# Generic helper to register a profiler scope around any module
+def _register_scope(obj, attr: str | None = None, tag: str = ""):
+    module = getattr(obj, attr, obj) if attr else obj
+    if module is None:
+        return
+    def _pre(mod, inputs):
+        rf = record_function(tag)
+        rf.__enter__()
+        # store by tag to support nested/recursive calls safely
+        m = mod.__dict__.setdefault("_rf_map", {})
+        m[tag] = rf
+    def _post(mod, inputs, output):
+        m = mod.__dict__.get("_rf_map", None)
+        rf = None if m is None else m.pop(tag, None)
+        if rf is not None:
+            rf.__exit__(None, None, None)
+    module.register_forward_pre_hook(_pre)
+    module.register_forward_hook(_post)
+
 
 def install_layer_scopes(model):
     layers = model.decoder.layers
 
     # --- Global scopes outside decoder layers ---
-    etok = getattr(model.decoder, "embed_tokens", None)
-    if etok is not None:
-        def pre_etok(mod, inputs):
-            rf = record_function("G:embed_tokens")
-            mod.__dict__["_rf_etok"] = rf
-            rf.__enter__()
-        def post_etok(mod, inputs, output):
-            rf = mod.__dict__.pop("_rf_etok", None)
-            if rf is not None:
-                rf.__exit__(None, None, None)
-        etok.register_forward_pre_hook(pre_etok)
-        etok.register_forward_hook(post_etok)
-
-    epos = getattr(model.decoder, "embed_positions", None)
-    if epos is not None:
-        def pre_epos(mod, inputs):
-            rf = record_function("G:embed_positions")
-            mod.__dict__["_rf_epos"] = rf
-            rf.__enter__()
-        def post_epos(mod, inputs, output):
-            rf = mod.__dict__.pop("_rf_epos", None)
-            if rf is not None:
-                rf.__exit__(None, None, None)
-        epos.register_forward_pre_hook(pre_epos)
-        epos.register_forward_hook(post_epos)
-
-    dnorm = getattr(model.decoder, "final_layer_norm", None)
-    if dnorm is not None:
-        def pre_dnorm(mod, inputs):
-            rf = record_function("G:final_layer_norm")
-            mod.__dict__["_rf_dnorm"] = rf
-            rf.__enter__()
-        def post_dnorm(mod, inputs, output):
-            rf = mod.__dict__.pop("_rf_dnorm", None)
-            if rf is not None:
-                rf.__exit__(None, None, None)
-        dnorm.register_forward_pre_hook(pre_dnorm)
-        dnorm.register_forward_hook(post_dnorm)
-
-    lmh = getattr(model, "lm_head", None)
-    if lmh is not None:
-        def pre_lmh(mod, inputs):
-            rf = record_function("G:lm_head")
-            mod.__dict__["_rf_lmh"] = rf
-            rf.__enter__()
-        def post_lmh(mod, inputs, output):
-            rf = mod.__dict__.pop("_rf_lmh", None)
-            if rf is not None:
-                rf.__exit__(None, None, None)
-        lmh.register_forward_pre_hook(pre_lmh)
-        lmh.register_forward_hook(post_lmh)
+    _register_scope(model.decoder, "embed_tokens", "G:embed_tokens")
+    _register_scope(model.decoder, "embed_positions", "G:embed_positions")
+    _register_scope(model.decoder, "final_layer_norm", "G:final_layer_norm")
+    _register_scope(model, "lm_head", "G:lm_head")
 
     for idx, layer in enumerate(layers):
         # --- Layer scope ---
-        def pre_layer(mod, inputs, idx=idx):
-            rf = record_function(f"L{idx}:layer")
-            mod.__dict__["_rf_layer"] = rf
-            rf.__enter__()  # enter range
-            # DO NOT return anything
-
-        def post_layer(mod, inputs, output, idx=idx):
-            rf = mod.__dict__.pop("_rf_layer", None)
-            if rf is not None:
-                rf.__exit__(None, None, None)
-
-        layer.register_forward_pre_hook(pre_layer)
-        layer.register_forward_hook(post_layer)
+        _register_scope(layer, None, f"L{idx}:layer")
 
         # --- Attention scope (optional) ---
         attn = getattr(layer, "self_attn", None)
         if isinstance(attn, OPTAttention):
-            def pre_attn(mod, inputs, idx=idx):
-                rf = record_function(f"L{idx}:attn")
-                mod.__dict__["_rf_attn"] = rf
-                rf.__enter__()
-
-            def post_attn(mod, inputs, output, idx=idx):
-                rf = mod.__dict__.pop("_rf_attn", None)
-                if rf is not None:
-                    rf.__exit__(None, None, None)
-
-            attn.register_forward_pre_hook(pre_attn)
-            attn.register_forward_hook(post_attn)
+            _register_scope(attn, None, f"L{idx}:attn")
 
             # Projections inside attention
             for proj_name in ("q_proj", "k_proj", "v_proj", "out_proj"):
                 proj = getattr(attn, proj_name, None)
                 if proj is None:
                     continue
-
-                def pre_proj(mod, inputs, idx=idx, proj_name=proj_name):
-                    rf = record_function(f"L{idx}:attn.{proj_name}")
-                    mod.__dict__[f"_rf_attn_{proj_name}"] = rf
-                    rf.__enter__()
-
-                def post_proj(mod, inputs, output, idx=idx, proj_name=proj_name):
-                    rf = mod.__dict__.pop(f"_rf_attn_{proj_name}", None)
-                    if rf is not None:
-                        rf.__exit__(None, None, None)
-
-                proj.register_forward_pre_hook(pre_proj)
-                proj.register_forward_hook(post_proj)
+                _register_scope(proj, None, f"L{idx}:attn.{proj_name}")
 
         # --- Per-layer norms ---
         for norm_name in ("self_attn_layer_norm", "final_layer_norm"):
             norm = getattr(layer, norm_name, None)
             if norm is None:
                 continue
-
-            def pre_norm(mod, inputs, idx=idx, norm_name=norm_name):
-                rf = record_function(f"L{idx}:{norm_name}")
-                mod.__dict__[f"_rf_{norm_name}"] = rf
-                rf.__enter__()
-
-            def post_norm(mod, inputs, output, idx=idx, norm_name=norm_name):
-                rf = mod.__dict__.pop(f"_rf_{norm_name}", None)
-                if rf is not None:
-                    rf.__exit__(None, None, None)
-
-            norm.register_forward_pre_hook(pre_norm)
-            norm.register_forward_hook(post_norm)
+            _register_scope(norm, None, f"L{idx}:{norm_name}")
 
         # --- FFN scope (optional) ---
         for name in ("fc1", "fc2"):
             sub = getattr(layer, name, None)
             if sub is None:
                 continue
-
-            def pre_ffn(mod, inputs, idx=idx, name=name):
-                rf = record_function(f"L{idx}:ffn.{name}")
-                mod.__dict__[f"_rf_ffn_{name}"] = rf
-                rf.__enter__()
-
-            def post_ffn(mod, inputs, output, idx=idx, name=name):
-                rf = mod.__dict__.pop(f"_rf_ffn_{name}", None)
-                if rf is not None:
-                    rf.__exit__(None, None, None)
-
-            sub.register_forward_pre_hook(pre_ffn)
-            sub.register_forward_hook(post_ffn)
+            _register_scope(sub, None, f"L{idx}:ffn.{name}")
 
 
 class Problem:

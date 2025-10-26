@@ -23,6 +23,8 @@ def run():
     d = spec.problem.instance['D']
     e = spec.problem.instance['E']
 
+    # spec.architecture.find()
+
     # spec.mapspace.template = 'uber'
 
     tl.call_model(spec, output_dir="out")
@@ -38,49 +40,59 @@ def qkv_with_linear():
         "intmac.yaml",
     )
 
+    spec.architecture.find("PE").spatial.meshX = 96
+
     tl.call_model(spec, output_dir="out/qkv_with_linear")
 
 def mlp_linear_1():
     spec = tl.Specification.from_yaml_files(
-        "arch/128.yaml",
+        "arch/96.yaml",
         "shapes/gemm/mlp_linear_1.yaml",
         "tilings/mlp_linear_1.yaml",
         "variables.yaml",
         "intmac.yaml",
     )
 
+    spec.architecture.find("PE").spatial.meshX = 128
+
     tl.call_model(spec, output_dir="out/mlp_linear_1")
 
 def mlp_linear_2():
     spec = tl.Specification.from_yaml_files(
-        "arch/128.yaml",
+        "arch/96.yaml",
         "shapes/gemm/mlp_linear_2.yaml",
         "tilings/mlp_linear_2.yaml",
         "variables.yaml",
         "intmac.yaml",
     )
 
+    spec.architecture.find("PE").spatial.meshX = 128
+
     tl.call_model(spec, output_dir="out/mlp_linear_2")
 
 def bmm1():
     spec = tl.Specification.from_yaml_files(
-        "arch/8.yaml",
+        "arch/96.yaml",
         "shapes/gemm/bmm1.yaml",
         "tilings/bmm1.yaml",
         "variables.yaml",
         "intmac.yaml",
     )
 
+    spec.architecture.find("PE").spatial.meshX = 8
+
     tl.call_model(spec, output_dir="out/bmm1")
 
 def bmm2():
     spec = tl.Specification.from_yaml_files(
-        "arch/8.yaml",
+        "arch/96.yaml",
         "shapes/gemm/bmm2.yaml",
         "tilings/bmm2.yaml",
         "variables.yaml",
         "intmac.yaml",
     )
+
+    spec.architecture.find("PE").spatial.meshX = 8
 
     tl.call_model(spec, output_dir="out/bmm2")
 
@@ -103,11 +115,17 @@ def foo():
     # cycles_bmm1 = 18087936
     # cycles_bmm2 = 18317312
 
-    cycles_qkv_with_linear = 49152
-    cycles_mlp_linear_1 = 147456
-    cycles_mlp_linear_2 = 147456
-    cycles_bmm1 = 32768
-    cycles_bmm2 = 32768
+    cycles_qkv_with_linear = 245760
+    cycles_mlp_linear_1 = 737280
+    cycles_mlp_linear_2 = 737280
+    cycles_bmm1 = 163840
+    cycles_bmm2 = 163840
+
+    # cycles_qkv_with_linear = 49152
+    # cycles_mlp_linear_1 = 147456
+    # cycles_mlp_linear_2 = 147456
+    # cycles_bmm1 = 32768
+    # cycles_bmm2 = 32768
 
     # cycles / clock_freq
     # 10^6 for microseconds
