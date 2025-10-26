@@ -5,12 +5,8 @@ docker build -t jonasknobloch/timeloop .
 docker run -it -v .:/opt/project jonasknobloch/timeloop /bin/bash
 ```
 
-
-
-
 OctopuScheduler can only generate uniform workloads, meaning each available PE has the same workload.
 Timeloop can only geenrate uniform mappings, meaning the workload is distributed uniformly across available compute.
-
 
 CLI tool to generate worklaods, and simukate wokloads on multiple Chips.
 
@@ -21,7 +17,6 @@ But what about non matmul operations
 SINGLE CPU only run -> identify transformer blocks
 
 spinnloop
-
 
 ```bash
 git submodule add https://github.com/Accelergy-Project/pytorch2timeloop-converter vendor/pytorch2timeloop-converter
@@ -38,3 +33,13 @@ pip install openpyxl
  ```
 
 2025-07-04__time_measurements__large_matmul__3072-512-768__only_1_dram_transfer_per_weight_tile__and__input_tile
+
+## GEMMs
+
+| layer           | M   | N    | K    |
+|-----------------|-----|------|------|
+| qkv_with_linear | 512 | 768  | 768  |
+| mlp_linear_1    | 512 | 3072 | 768  |
+| mlp_linear_2    | 512 | 768  | 3072 |
+| bmm1            | 512 | 512  | 64   |
+| bmm2            | 512 | 64   | 512  |

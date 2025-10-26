@@ -1,0 +1,50 @@
+architecture:
+  version: 0.4
+  nodes:
+    - !Component
+      name: DRAM
+      class: DRAM
+      attributes:
+        depth: 24*2**16 # TODO
+        width: 1024
+        datawidth: 128
+        # read_bandwidth: 10 # TODO
+        # write_bandwidth: 10 # TODO
+    - !Container
+      name: PE
+      spatial: {meshY: 1, meshX: 128}
+    - !Component
+      name: Buffer
+      class: SRAM
+      attributes:
+        depth: 768*32 # without * 32 I get 3072 size which cant fit 98304
+        width: 128
+        # block_size: 4
+        datawidth: 32
+        read_bandwidth: 4 # number of words per cycle
+        write_bandwidth: 4 # 20 for full utilization
+        # allow_overbooking: true
+      constraints:
+        dataspace:
+          keep: [Inputs, Weights]
+          bypass: [Z] # TODO keep outputs in register? I guess it should still end up here since we do not read from accumulator
+      #- !Component #  TODO check if ths can be handled in the intmac itself.
+      #  name: Accumulator
+      #  class: regfile
+      #  attributes:
+      #    depth: 64*32
+      #    width: 64*32
+      #    datawidth: 32
+      #    read_bandwidth: 2 # 157287
+      #    write_bandwidth: 20
+      #  constraints:
+      #    dataspace:
+      #      keep_only: [Z]
+    - !Component
+      name: Accelerator
+      spatial: {meshY: 4, meshX: 16}
+      class: intmac
+      attributes:
+        multiplier_width: 16
+        adder_width: 29
+        # network_fill_latency ??

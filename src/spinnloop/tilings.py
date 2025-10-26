@@ -1,6 +1,4 @@
 import numpy as np
-from sympy.integrals.rde import bound_degree
-
 
 class Tiling:
     def __init__(
@@ -72,14 +70,14 @@ class Tiling:
 
         return bounds.tolist()
 
-def model(
+def tilings(
         # trace: Annotated[str, typer.Argument(help="")] = "",
 ):
     # TODO loop over trace
 
-    tilings = dict()
+    layers = dict()
 
-    tilings["qkv_with_linear"] = Tiling(
+    layers["qkv_with_linear"] = Tiling(
         (512, 768),
         (768, 768),
         (512, 768),
@@ -91,7 +89,7 @@ def model(
         (8, 12),
     )
 
-    tilings["mlp_linear_1"] = Tiling(
+    layers["mlp_linear_1"] = Tiling(
         (512, 768),
         (768, 3072),
         (512, 3072),
@@ -103,7 +101,7 @@ def model(
         (8, 48),
     )
 
-    tilings["mlp_linear_2"] = Tiling(
+    layers["mlp_linear_2"] = Tiling(
         (512, 3072),
         (3072, 768),
         (512, 768),
@@ -115,7 +113,7 @@ def model(
         (32, 48), # was 12
     )
 
-    tilings["bmm1"] = Tiling(
+    layers["bmm1"] = Tiling(
         (512, 64),
         (64, 512),
         (512, 512),
@@ -127,7 +125,7 @@ def model(
         (8, 1),
     )
 
-    tilings["bmm2"] = Tiling(
+    layers["bmm2"] = Tiling(
         (512, 512),
         (512, 64),
         (512, 64),
@@ -139,15 +137,15 @@ def model(
         (8, 1),
     )
 
-    print(tilings["qkv_with_linear"].validate(96*1024, 96, 1))
-    print(tilings["mlp_linear_1"].validate(96*1024, 128, 3))
-    print(tilings["mlp_linear_2"].validate(96*1024, 128, 12))
-    print(tilings["bmm1"].validate(96*1024, 8, 1)) # 12 times
-    print(tilings["bmm2"].validate(96*1024, 8, 1)) # 12 times
+    print(layers["qkv_with_linear"].validate(96*1024, 96, 1))
+    print(layers["mlp_linear_1"].validate(96*1024, 128, 3))
+    print(layers["mlp_linear_2"].validate(96*1024, 128, 12))
+    print(layers["bmm1"].validate(96*1024, 8, 1)) # 12 times
+    print(layers["bmm2"].validate(96*1024, 8, 1)) # 12 times
 
-    print(tilings["qkv_with_linear"].loop_bounds(96, 1))
-    print(tilings["mlp_linear_1"].loop_bounds(128, 3))
-    print(tilings["mlp_linear_2"].loop_bounds(128, 12))
-    print(tilings["bmm1"].loop_bounds(8, 1)) # 12 times
-    print(tilings["bmm2"].loop_bounds(8, 1)) # 12 times
+    print(layers["qkv_with_linear"].loop_bounds(96, 1))
+    print(layers["mlp_linear_1"].loop_bounds(128, 3))
+    print(layers["mlp_linear_2"].loop_bounds(128, 12))
+    print(layers["bmm1"].loop_bounds(8, 1)) # 12 times
+    print(layers["bmm2"].loop_bounds(8, 1)) # 12 times
 

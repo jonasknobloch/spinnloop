@@ -1,13 +1,13 @@
 import typer
 
 from .trace import trace
-from .model import model
+from .tilings import tilings
 
 
 app = typer.Typer()
 
 app.command()(trace)
-app.command()(model)
+app.command()(tilings)
 
 
 if __name__ == "__main__":

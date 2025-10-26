@@ -1,0 +1,4 @@
+variables:
+  version: 0.4
+  global_cycle_seconds: 1e-9
+  technology: 40 # TODO 22nm
