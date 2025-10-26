@@ -8,3 +8,10 @@ ENV JUPYTER_SWITCHES="--NotebookApp.token=''"
 RUN pip install /usr/local/src/timeloopfe/
 
 WORKDIR /opt/project/
+
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY pyproject.toml ./
+COPY src ./src
+RUN pip install -e .
