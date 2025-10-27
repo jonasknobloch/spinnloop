@@ -9,7 +9,7 @@ import pytimeloop.timeloopfe.v4 as tl
 
 def run(layer, processing_elements, dimensions):
     spec = tl.Specification.from_yaml_files(
-        "../config/components/intmac.yaml",
+        "../config/intmac.yaml",
         "../config/architecture.yaml",
         "../config/problem.yaml",
         "../config/variables.yaml",

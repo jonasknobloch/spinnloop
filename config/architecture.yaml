@@ -28,7 +28,7 @@ architecture:
         dataspace:
           keep: [Inputs, Weights]
           bypass: [Z] # TODO keep outputs in register? I guess it should still end up here since we do not read from accumulator
-      #- !Component #  TODO check if ths can be handled in the intmac itself.
+      #- !Component #  TODO check if ths can be handled in the intmac itself
       #  name: Accumulator
       #  class: regfile
       #  attributes:
