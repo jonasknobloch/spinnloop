@@ -11,7 +11,8 @@ class Tiling:
             out_size,
             op_a_num,
             op_b_num,
-            out_num):
+            out_num,
+            processing_elements):
 
         for k, v in locals().items():
             if v == self:
@@ -31,6 +32,7 @@ class Tiling:
         self.op_a_num = op_a_num
         self.op_b_num = op_b_num
         self.out_num = out_num
+        self.processing_elements = processing_elements # (processing_elements, parts)
 
     def validate(self, buffer_capacity, processing_elements, parts):
         return self._shared_dimension(), self._memory_available(buffer_capacity), self._tiles_match_processing_elements(processing_elements, parts)
@@ -70,11 +72,22 @@ class Tiling:
 
         return bounds.tolist()
 
-def tilings(
-        # trace: Annotated[str, typer.Argument(help="")] = "",
-):
-    # TODO loop over trace
+def tilings():
+    layers = _tilings()
 
+    print(layers["qkv_with_linear"].validate(96*1024, 96, 1))
+    print(layers["mlp_linear_1"].validate(96*1024, 128, 3))
+    print(layers["mlp_linear_2"].validate(96*1024, 128, 12))
+    print(layers["bmm1"].validate(96*1024, 8, 1)) # 12 times
+    print(layers["bmm2"].validate(96*1024, 8, 1)) # 12 times
+
+    print(layers["qkv_with_linear"].loop_bounds(96, 1))
+    print(layers["mlp_linear_1"].loop_bounds(128, 3))
+    print(layers["mlp_linear_2"].loop_bounds(128, 12))
+    print(layers["bmm1"].loop_bounds(8, 1)) # 12 times
+    print(layers["bmm2"].loop_bounds(8, 1)) # 12 times
+
+def _tilings():
     layers = dict()
 
     layers["qkv_with_linear"] = Tiling(
@@ -87,6 +100,7 @@ def tilings(
         (8, 1),
         (1, 12),
         (8, 12),
+        (96, 1),
     )
 
     layers["mlp_linear_1"] = Tiling(
@@ -99,6 +113,7 @@ def tilings(
         (8, 1),
         (1, 48),
         (8, 48),
+        (128, 3),
     )
 
     layers["mlp_linear_2"] = Tiling(
@@ -111,6 +126,7 @@ def tilings(
         (32, 1), # was 12
         (1, 48),
         (32, 48), # was 12
+        (128, 12),
     )
 
     layers["bmm1"] = Tiling(
@@ -122,6 +138,7 @@ def tilings(
         (64, 512),
         (8, 1),
         (1, 1),
+        (8, 1),
         (8, 1),
     )
 
@@ -135,17 +152,8 @@ def tilings(
         (8, 1),
         (1, 1),
         (8, 1),
+        (8, 1),
     )
 
-    print(layers["qkv_with_linear"].validate(96*1024, 96, 1))
-    print(layers["mlp_linear_1"].validate(96*1024, 128, 3))
-    print(layers["mlp_linear_2"].validate(96*1024, 128, 12))
-    print(layers["bmm1"].validate(96*1024, 8, 1)) # 12 times
-    print(layers["bmm2"].validate(96*1024, 8, 1)) # 12 times
-
-    print(layers["qkv_with_linear"].loop_bounds(96, 1))
-    print(layers["mlp_linear_1"].loop_bounds(128, 3))
-    print(layers["mlp_linear_2"].loop_bounds(128, 12))
-    print(layers["bmm1"].loop_bounds(8, 1)) # 12 times
-    print(layers["bmm2"].loop_bounds(8, 1)) # 12 times
+    return layers
 

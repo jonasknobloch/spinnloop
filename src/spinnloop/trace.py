@@ -14,11 +14,30 @@ torch.backends.cuda.enable_flash_sdp(False)
 torch.backends.cuda.enable_math_sdp(True)
 torch.backends.cuda.enable_mem_efficient_sdp(False)
 
+class TraceResults:
+    def __init__(self, matmuls_grouped, static_grouped, names_sorted):
+        self.matmuls_grouped = matmuls_grouped
+        self.static_grouped = static_grouped
+        self.names_sorted = names_sorted
+
+
 def trace(
         model: Annotated[str, typer.Argument(help="")] = "facebook/opt-125m",
         sequence_length: Annotated[int, typer.Argument(help="")] = 512,
-        batch_attn_heads: Annotated[bool, typer.Argument(help="")] = True,
 ):
+    results = _trace(model, sequence_length)
+
+    for key, value in results.matmuls_grouped.items():
+        print(key, value)
+
+    for key, value in results.static_grouped.items():
+        print(key, value)
+
+    for key, value in results.names_sorted.items():
+        print(key, value)
+
+
+def _trace(model, sequence_length):
     model = OPTModel.from_pretrained(model).eval()
 
     _scope_model(model)
@@ -53,14 +72,7 @@ def trace(
     static_grouped = _group_matmuls(static)
     names_sorted = dict(sorted(names.items(), key=lambda x: x[1], reverse=True))
 
-    for key, value in matmuls_grouped.items():
-        print(key, len(value))
-
-    for key, value in static_grouped.items():
-        print(key, len(value))
-
-    # for key, value in names_sorted.items():
-    #     print(key, value)
+    return TraceResults(matmuls_grouped, static_grouped, names_sorted)
 
 
 def _scope_module(obj, attr: str | None = None, tag: str = ""):
@@ -205,7 +217,7 @@ def _extract_static(event, idx):
     if name == Key.LAYER_NORM:
         # [[1, 512, 768], [], [768], [768], [], []]
         # [[512, 768], [], [768], [768], [], []]
-        assert [len(s) for s in shapes] in [[3, 0, 1, 1, 0, 0], [2, 0, 1, 1, 0, 0] ]
+        assert [len(s) for s in shapes] in [[3, 0, 1, 1, 0, 0], [2, 0, 1, 1, 0, 0]]
         return [(idx, name, tuple(tuple(s) for s in shapes))]
 
     if name == Key.SOFTMAX:
