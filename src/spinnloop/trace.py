@@ -103,8 +103,6 @@ def _scope_module(obj, attr: str | None = None, tag: str = ""):
 
 
 def _scope_model(model):
-    # print(model)
-
     _scope_module(model.decoder, "embed_tokens", "G:embed_tokens")
     _scope_module(model.decoder, "embed_positions", "G:embed_positions")
 

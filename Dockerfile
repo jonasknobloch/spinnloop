@@ -4,6 +4,7 @@ ENV USER_UID=501
 ENV USER_GID=20
 
 ENV JUPYTER_SWITCHES="--NotebookApp.token=''"
+ENV HF_HOME=/opt/project/hf
 
 RUN pip install /usr/local/src/timeloopfe/
 
