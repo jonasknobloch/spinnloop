@@ -3,6 +3,11 @@
 ```bash
 docker build -t jonasknobloch/timeloop .
 docker run -it -v .:/opt/project jonasknobloch/timeloop /bin/bash
+docker run -it --entrypoint /bin/bash -v .:/opt/project jonasknobloch/timeloop
+```
+
+```bash
+alias spinnloop="docker run -it --entrypoint spinnloop -v .:/opt/project jonasknobloch/timeloop"
 ```
 
 ```bash
