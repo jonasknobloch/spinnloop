@@ -1,0 +1,8 @@
+services:
+  timeloop:
+    hostname: timeloop
+    image: jonasknobloch/timeloop
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./workspace:/home/workspace
