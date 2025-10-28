@@ -1,4 +1,6 @@
 import os
+import shutil
+
 import typer
 
 from collections import defaultdict
@@ -8,8 +10,12 @@ import pytimeloop.timeloopfe.v4 as tl
 from .trace import _trace
 from .tilings import _tilings, Tiling
 
+_use_cached_timeloop_results = False
 
-def model():
+def model(cache: bool = True):
+    global _use_cached_timeloop_results
+    _use_cached_timeloop_results = cache
+
     _model()
 
 def _model():
@@ -91,10 +97,14 @@ def _run(layer, processing_elements, dimensions):
     # spec.problem.instance['K'] = dimensions[2] # m x n x shared
     spec.problem.instance['K'] = dimensions[1] # m x shared x n
 
-    if os.path.exists(f"out/{layer}"):
-        stats = tl.parse_timeloop_output(spec=spec, output_dir=f"out/{layer}", prefix="timeloop-model")
+    out_path = f"out/{layer}"
+
+    if os.path.exists(out_path) and _use_cached_timeloop_results:
+        stats = tl.parse_timeloop_output(spec=spec, output_dir=out_path, prefix="timeloop-model")
     else:
-        stats = tl.call_model(spec, output_dir=f"out/{layer}")
+        if os.path.exists(out_path):
+            shutil.rmtree(out_path)
+        stats = tl.call_model(spec, output_dir=out_path)
 
     return stats.cycles
 
