@@ -11,10 +11,14 @@ from .trace import _trace
 from .tilings import _tilings, Tiling
 
 _use_cached_timeloop_results = False
+_apply_bandwidth_limits = True
 
-def model(cache: bool = True):
+def model(cache: bool = True, bandwidth_limits: bool = True):
     global _use_cached_timeloop_results
     _use_cached_timeloop_results = cache
+
+    global _apply_bandwidth_limits
+    _apply_bandwidth_limits = bandwidth_limits
 
     _model()
 
@@ -90,6 +94,15 @@ def _run(layer, processing_elements, dimensions):
     )
 
     spec.architecture.find("PE").spatial.meshX = processing_elements
+
+    if not _apply_bandwidth_limits:
+        spec.architecture.find("DRAM").attributes.shared_bandwidth = None
+        spec.architecture.find("DRAM").attributes.read_bandwidth = None
+        spec.architecture.find("DRAM").attributes.write_bandwidth = None
+        spec.architecture.find("Buffer").attributes.shared_bandwidth = None
+        spec.architecture.find("Buffer").attributes.read_bandwidth = None
+        spec.architecture.find("Buffer").attributes.write_bandwidth = None
+
 
     spec.problem.instance['M'] = dimensions[0]
     # spec.problem.instance['N'] = dimensions[1]
