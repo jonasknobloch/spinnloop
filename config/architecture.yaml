@@ -27,7 +27,7 @@ architecture:
       constraints:
         dataspace:
           keep: [Inputs, Weights]
-          bypass: [Z] # TODO keep outputs in register? I guess it should still end up here since we do not read from accumulator
+          bypass: [Outputs] # TODO keep outputs in register? I guess it should still end up here since we do not read from accumulator
       #- !Component #  TODO check if ths can be handled in the intmac itself
       #  name: Accumulator
       #  class: regfile
@@ -39,7 +39,7 @@ architecture:
       #    write_bandwidth: 20
       #  constraints:
       #    dataspace:
-      #      keep_only: [Z]
+      #      keep_only: [Outputs]
     - !Component
       name: Accelerator
       spatial: {meshY: 4, meshX: 16}
