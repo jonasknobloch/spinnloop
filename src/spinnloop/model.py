@@ -51,28 +51,27 @@ def _model():
     latency_softmax_ms = 0.28 * 1e-3
     latency_add_ms = 0.02 * 1e-3
 
+    processing_elements_layer_norm = 128
+    processing_elements_softmax = 96
+    processing_elements_add = 128
+
     for (event, shapes), value in trace.static_grouped.items():
         if event == "aten::add":
             if [len(s) for s in shapes] == [3, 3, 0]:
-                # latency_per_layer[("layer_add", value[0])] = (shapes[0][1] * shapes[0][2]) * latency_add_ms
-                latency_per_layer[("layer_add", value[0])] = (shapes[0][1]) * latency_add_ms # TODO per embedding vector or per element
+                latency_per_layer[("layer_add", value[0])] = (shapes[0][1] * shapes[0][2]) * latency_add_ms / processing_elements_add
                 continue
             if [len(s) for s in shapes] == [2, 2, 0]:
-                # latency_per_layer[("layer_add", value[0])] = (shapes[0][0] * shapes[0][1]) * latency_add_ms
-                latency_per_layer[("layer_add", value[0])] = (shapes[0][0]) * latency_add_ms
+                latency_per_layer[("layer_add", value[0])] = (shapes[0][0] * shapes[0][1]) * latency_add_ms / processing_elements_add
                 continue
         if event == "aten::layer_norm":
             if [len(s) for s in shapes] == [3, 0, 1, 1, 0, 0]:
-                # latency_per_layer[("layer_norm", value[0])] = (shapes[0][1] * shapes[0][2]) * latency_layer_norm_ms
-                latency_per_layer[("layer_norm", value[0])] = (shapes[0][1]) * latency_layer_norm_ms
+                latency_per_layer[("layer_norm", value[0])] = (shapes[0][1]) * latency_layer_norm_ms / processing_elements_layer_norm
                 continue
             if [len(s) for s in shapes] == [2, 0, 1, 1, 0, 0]:
-                # latency_per_layer[("layer_norm", value[0])] = (shapes[0][0] * shapes[0][1]) * latency_layer_norm_ms
-                latency_per_layer[("layer_norm", value[0])] = (shapes[0][0]) * latency_layer_norm_ms
+                latency_per_layer[("layer_norm", value[0])] = (shapes[0][0] * shapes[0][1]) * latency_layer_norm_ms / processing_elements_layer_norm
                 continue
         if event == "aten::softmax":
-            # latency_per_layer[("softmax", value[0])] = (shapes[0][1] * shapes[0][2] * shapes[0][3]) * latency_softmax_ms # 12 times per layer
-            latency_per_layer[("softmax", value[0])] = (shapes[0][1] * shapes[0][2]) * latency_softmax_ms # 12 times per layer
+            latency_per_layer[("softmax", value[0])] = (shapes[0][1] * shapes[0][2] * shapes[0][3]) * latency_softmax_ms / processing_elements_softmax # 12 times per layer
             continue
 
         raise RuntimeError(f"unhandled static event {event}")
