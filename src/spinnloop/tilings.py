@@ -75,80 +75,157 @@ class Tiling:
 def tilings():
     layers = _tilings()
 
-    print(layers["qkv_with_linear"].validate(96*1024, 96, 1))
-    print(layers["mlp_linear_1"].validate(96*1024, 128, 3))
-    print(layers["mlp_linear_2"].validate(96*1024, 128, 12))
-    print(layers["bmm1"].validate(96*1024, 8, 1)) # 12 times
-    print(layers["bmm2"].validate(96*1024, 8, 1)) # 12 times
+    # print(layers["qkv_with_linear"].validate(96*1024, 96, 1))
+    # print(layers["mlp_linear_1"].validate(96*1024, 128, 3))
+    # print(layers["mlp_linear_2"].validate(96*1024, 128, 12))
+    # print(layers["bmm1"].validate(96*1024, 8, 1)) # 12 times
+    # print(layers["bmm2"].validate(96*1024, 8, 1)) # 12 times
 
-    print(layers["qkv_with_linear"].loop_bounds(96, 1))
-    print(layers["mlp_linear_1"].loop_bounds(128, 3))
-    print(layers["mlp_linear_2"].loop_bounds(128, 12))
-    print(layers["bmm1"].loop_bounds(8, 1)) # 12 times
-    print(layers["bmm2"].loop_bounds(8, 1)) # 12 times
+    print(layers["qkv_with_linear"].validate(96*1024, 24, 1))
+    print(layers["mlp_linear_1"].validate(96*1024, 96, 1))
+    print(layers["mlp_linear_2"].validate(96*1024, 128, 3))
+    print(layers["bmm1"].validate(96*1024, 8, 1))
+    print(layers["bmm2"].validate(96*1024, 8, 1))
+
+    # print(layers["qkv_with_linear"].loop_bounds(96, 1))
+    # print(layers["mlp_linear_1"].loop_bounds(128, 3))
+    # print(layers["mlp_linear_2"].loop_bounds(128, 12))
+    # print(layers["bmm1"].loop_bounds(8, 1)) # 12 times
+    # print(layers["bmm2"].loop_bounds(8, 1)) # 12 times
+
+    print(layers["qkv_with_linear"].loop_bounds(24, 1))
+    print(layers["mlp_linear_1"].loop_bounds(96, 1))
+    print(layers["mlp_linear_2"].loop_bounds(128, 3))
+    print(layers["bmm1"].loop_bounds(8, 1))
+    print(layers["bmm2"].loop_bounds(8, 1))
 
 def _tilings():
     layers = dict()
 
+    # layers["qkv_with_linear"] = Tiling(
+    #     (512, 768),
+    #     (768, 768),
+    #     (512, 768),
+    #     (64, 768),
+    #     (768, 64),
+    #     (64, 64),
+    #     (8, 1),
+    #     (1, 12),
+    #     (8, 12),
+    #     (96, 1),
+    # )
+
     layers["qkv_with_linear"] = Tiling(
-        (512, 768),
+        (128, 768),
         (768, 768),
-        (512, 768),
+        (128, 768),
         (64, 768),
         (768, 64),
         (64, 64),
-        (8, 1),
+        (2, 1),
         (1, 12),
-        (8, 12),
+        (2, 12),
+        (24, 1),
+    )
+
+    # layers["mlp_linear_1"] = Tiling(
+    #     (512, 768),
+    #     (768, 3072),
+    #     (512, 3072),
+    #     (64, 768),
+    #     (768, 64),
+    #     (64, 64),
+    #     (8, 1),
+    #     (1, 48),
+    #     (8, 48),
+    #     (128, 3),
+    # )
+
+    layers["mlp_linear_1"] = Tiling(
+        (128, 768),
+        (768, 3072),
+        (128, 3072),
+        (64, 768),
+        (768, 64),
+        (64, 64),
+        (2, 1),
+        (1, 48),
+        (2, 48),
         (96, 1),
     )
 
-    layers["mlp_linear_1"] = Tiling(
-        (512, 768),
-        (768, 3072),
-        (512, 3072),
-        (64, 768),
-        (768, 64),
-        (64, 64),
+    # layers["mlp_linear_2"] = Tiling(
+    #     (512, 3072),
+    #     (3072, 768),
+    #     (512, 768),
+    #     (16, 3072),
+    #     (3072, 16),
+    #     (16, 16),
+    #     (32, 1), # was 12
+    #     (1, 48),
+    #     (32, 48), # was 12
+    #     (128, 12),
+    # )
+
+    layers["mlp_linear_2"] = Tiling(
+        (128, 3072),
+        (3072, 768),
+        (128, 768),
+        (16, 3072),
+        (3072, 16),
+        (16, 16),
         (8, 1),
         (1, 48),
         (8, 48),
         (128, 3),
     )
 
-    layers["mlp_linear_2"] = Tiling(
-        (512, 3072),
-        (3072, 768),
-        (512, 768),
-        (16, 3072),
-        (3072, 16),
-        (16, 16),
-        (32, 1), # was 12
-        (1, 48),
-        (32, 48), # was 12
-        (128, 12),
-    )
+    # layers["bmm1"] = Tiling(
+    #     (512, 64),
+    #     (64, 512),
+    #     (512, 512),
+    #     (64, 64),
+    #     (64, 512),
+    #     (64, 512),
+    #     (8, 1),
+    #     (1, 1),
+    #     (8, 1),
+    #     (8, 1),
+    # )
 
     layers["bmm1"] = Tiling(
-        (512, 64),
-        (64, 512),
-        (512, 512),
-        (64, 64),
-        (64, 512),
-        (64, 512),
+        (128, 64),
+        (64, 128),
+        (128, 128),
+        (16, 64),
+        (64, 128),
+        (16, 128),
         (8, 1),
         (1, 1),
         (8, 1),
         (8, 1),
     )
 
+    # layers["bmm2"] = Tiling(
+    #     (512, 512),
+    #     (512, 64),
+    #     (512, 64),
+    #     (64, 512),
+    #     (512, 64),
+    #     (64, 64),
+    #     (8, 1),
+    #     (1, 1),
+    #     (8, 1),
+    #     (8, 1),
+    # )
+
     layers["bmm2"] = Tiling(
-        (512, 512),
-        (512, 64),
-        (512, 64),
-        (64, 512),
-        (512, 64),
-        (64, 64),
+        (128, 128),
+        (128, 64),
+        (128, 64),
+        (16, 128),
+        (128, 64),
+        (16, 64),
         (8, 1),
         (1, 1),
         (8, 1),

@@ -23,7 +23,7 @@ def model(cache: bool = True, bandwidth_limits: bool = True):
     _model()
 
 def _model():
-    trace = _trace("facebook/opt-125m", 512)
+    trace = _trace("facebook/opt-125m", 128)
     tilings = _tilings()
 
     cycles_per_layer = defaultdict(int)
@@ -51,9 +51,9 @@ def _model():
     latency_softmax_ms = 0.28 * 1e-3
     latency_add_ms = 0.02 * 1e-3
 
-    processing_elements_layer_norm = 128
-    processing_elements_softmax = 96
-    processing_elements_add = 128
+    processing_elements_layer_norm = 96 # TODO verify
+    processing_elements_softmax = 24 # TODO verify
+    processing_elements_add = 96 # TODO verify
 
     for (event, shapes), value in trace.static_grouped.items():
         if event == "aten::add":
@@ -89,7 +89,7 @@ def _run(layer, processing_elements, dimensions):
         "config/architecture.yaml",
         "config/problem.yaml",
         "config/variables.yaml",
-        f"config/tilings/{layer}.yaml"
+        f"config/tilings/128/{layer}.yaml"
     )
 
     spec.architecture.find("PE").spatial.meshX = processing_elements
