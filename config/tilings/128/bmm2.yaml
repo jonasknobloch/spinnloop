@@ -11,6 +11,10 @@ mapping:
     permutation: [K, M, N]
     target: Buffer
     type: temporal
+  # - factors: [N=1, M=1, K=1]
+  #   permutation: [K, M, N]
+  #   target: Register
+  #   type: temporal
   - factors: [N=16, M=4, K=1]
     permutation: [N, M, K]
     target: Accelerator

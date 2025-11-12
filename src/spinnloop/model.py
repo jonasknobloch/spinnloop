@@ -86,7 +86,7 @@ def _run(layer, processing_elements, dimensions):
 
     spec = tl.Specification.from_yaml_files(
         "config/intmac.yaml",
-        "config/architecture.yaml",
+        "config/architecture/quantized_outputs.yaml",
         "config/problem.yaml",
         "config/variables.yaml",
         f"config/tilings/128/{layer}.yaml"
@@ -101,6 +101,9 @@ def _run(layer, processing_elements, dimensions):
         spec.architecture.find("Buffer").attributes.shared_bandwidth = None
         spec.architecture.find("Buffer").attributes.read_bandwidth = None
         spec.architecture.find("Buffer").attributes.write_bandwidth = None
+
+        # TODO disable register limits
+        # TODO disable output buffer limits
 
 
     spec.problem.instance['M'] = dimensions[0]
