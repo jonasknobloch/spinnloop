@@ -89,7 +89,7 @@ def _run(layer, processing_elements, dimensions):
         "config/architecture.yaml",
         "config/problem.yaml",
         "config/variables.yaml",
-        f"config/tilings/128/{layer}.yaml"
+        f"config/mappings/128/{layer}.yaml"
     )
 
     spec.architecture.find("PE").spatial.meshX = processing_elements

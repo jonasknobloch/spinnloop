@@ -3,11 +3,11 @@ mapping:
     permutation: [K, M, N]
     target: DRAM
     type: temporal
-  - factors: [N=1, M=8, K=1]
+  - factors: [N=16, M=8, K=1]
     permutation: [K, M, N]
     target: PE
     type: spatial
-  - factors: [N=32, M=16, K=64]
+  - factors: [N=3, M=4, K=768]
     permutation: [K, M, N]
     target: Buffer
     type: temporal

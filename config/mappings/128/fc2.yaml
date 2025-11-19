@@ -7,7 +7,7 @@ mapping:
     permutation: [K, M, N]
     target: PE
     type: spatial
-  - factors: [N=1, M=4, K=3072]
+  - factors: [N=1, M=1, K=3072]
     permutation: [K, M, N]
     target: Buffer
     type: temporal
