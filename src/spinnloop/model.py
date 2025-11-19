@@ -51,9 +51,9 @@ def _model():
     latency_softmax_ms = 0.28 * 1e-3
     latency_add_ms = 0.02 * 1e-3
 
-    processing_elements_layer_norm = 96 # TODO verify
-    processing_elements_softmax = 24 # TODO verify
-    processing_elements_add = 96 # TODO verify
+    processing_elements_layer_norm = 128 # TODO verify
+    processing_elements_softmax = 128 # TODO verify
+    processing_elements_add = 128 # TODO verify
 
     for (event, shapes), value in trace.static_grouped.items():
         if event == "aten::add":
