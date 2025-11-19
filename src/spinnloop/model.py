@@ -102,6 +102,9 @@ def _run(layer, processing_elements, dimensions):
         spec.architecture.find("Buffer").attributes.read_bandwidth = None
         spec.architecture.find("Buffer").attributes.write_bandwidth = None
 
+        # TODO disable register limits
+        # TODO disable output buffer limits
+
 
     spec.problem.instance['M'] = dimensions[0]
     # spec.problem.instance['N'] = dimensions[1]

@@ -1,0 +1,66 @@
+architecture:
+  version: 0.4
+  nodes:
+    - !Component
+      name: DRAM
+      class: DRAM
+      attributes:
+        depth: 268435456
+        width: 64
+        datawidth: 8
+        read_bandwidth: 128
+        write_bandwidth: 128
+      constraints:
+        dataspace:
+          keep: [ Inputs, Weights, Outputs ]
+    - !Container
+      name: PE
+      spatial: { meshY: 1, meshX: 128 }
+    - !Parallel
+      nodes:
+        - !Component
+          name: Buffer
+          class: SRAM
+          attributes:
+            depth: 12288
+            width: 64
+            datawidth: 8
+            read_bandwidth: 128
+            write_bandwidth: 128
+          constraints:
+            dataspace:
+              keep: [ Inputs, Weights ]
+              bypass: [ Outputs ]
+        - !Component
+          name: Buffer_Out
+          class: SRAM
+          attributes:
+            depth: 12288
+            width: 64
+            datawidth: 32
+            read_bandwidth: 4
+            write_bandwidth: 4
+          constraints:
+            dataspace:
+              keep: [ Outputs ]
+              bypass: [ Inputs, Weights ]
+    - !Component
+      name: Register
+      class: regfile
+      attributes:
+        depth: 12288
+        width: 64
+        datawidth: 32
+        read_bandwidth: 128
+        write_bandwidth: 128
+      constraints:
+        dataspace:
+          keep: [ Outputs ]
+          bypass: [ Inputs, Weights ]
+    - !Component
+      name: Accelerator
+      spatial: { meshY: 4, meshX: 16 }
+      class: intmac
+      attributes:
+        multiplier_width: 16
+        adder_width: 29
