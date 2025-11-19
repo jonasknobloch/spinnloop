@@ -45,11 +45,11 @@ def _model():
             # print(tiling_key, value[i])
 
             cycles_per_layer[(tiling_key, value[i])] += cycles
-            latency_per_layer[(tiling_key, value[i])] += _cycles_to_latency_ms(cycles)
+            latency_per_layer[(tiling_key, value[i])] += _cycles_to_latency_us(cycles)
 
-    latency_layer_norm_ms = 0.74 * 1e-3
-    latency_softmax_ms = 0.28 * 1e-3
-    latency_add_ms = 0.02 * 1e-3
+    latency_layer_norm_ms = 0.74
+    latency_softmax_ms = 0.28
+    latency_add_ms = 0.02
 
     processing_elements_layer_norm = 128 # TODO verify
     processing_elements_softmax = 128 # TODO verify
@@ -132,3 +132,6 @@ def _select_tiling_key(tilings, dimensions):
 
 def _cycles_to_latency_ms(cycles, clock_speed=150e6):
     return  (cycles / clock_speed) * 1e3
+
+def _cycles_to_latency_us(cycles, clock_speed=150e6):
+    return  (cycles / clock_speed) * 1e6
