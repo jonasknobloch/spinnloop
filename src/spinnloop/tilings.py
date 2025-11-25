@@ -115,14 +115,16 @@ def _from_csv(file_path):
                 op_b_num = get_dims('weights_tile_num_vertical', 'weights_tile_num_horizontal')
                 out_num  = get_dims('output_tile_num_vertical', 'output_tile_num_horizontal')
 
-                # if row['layer_type'] == 'opt_bmm':
-                #   out_num = (out_num[0] * 12, out_num[1]) # TODO fix in csv
-
                 op_a = (op_a_size[0] * op_a_num[0], op_a_size[1] * op_a_num[1])
                 op_b = (op_b_size[0] * op_b_num[0], op_b_size[1] * op_b_num[1])
                 out  = (out_size[0] * out_num[0],   out_size[1] * out_num[1])
 
-                pes = (int(row['num_worker_pes_per_part']), int(row['num_parts']))
+                num_worker_pes_per_part = int(row['num_worker_pes_per_part'])
+
+                if row['layer_type'] == 'opt_bmm':
+                    num_worker_pes_per_part = int(num_worker_pes_per_part / 12)
+
+                pes = (num_worker_pes_per_part, int(row['num_parts']))
 
                 # layer_name = row['layer_name'].replace('decoder_layer_0_', '')
                 layer_name = re.sub(r'^decoder_layer_\d+_', '', row['layer_name'])
