@@ -8,14 +8,18 @@ architecture:
         depth: 268435456
         width: 64
         datawidth: 8
-        read_bandwidth: 128
-        write_bandwidth: 128
+        # read_bandwidth: 1 # bits per cycle
       constraints:
         dataspace:
-          keep: [ Inputs, Weights, Outputs ]
+          keep: [ Inputs, Weights ]
+          bypass: [ Outputs ]
     - !Container
       name: PE
       spatial: { meshY: 1, meshX: 128 }
+      constraints:
+        spatial:
+          no_reuse: [ Inputs, Weights ]
+        #   no_link_transfer: [ Inputs, Weights ] # no effect
     - !Component
       name: Buffer
       class: SRAM
@@ -23,12 +27,10 @@ architecture:
         depth: 12288
         width: 64
         datawidth: 8
-        read_bandwidth: 128
-        write_bandwidth: 128
       constraints:
         dataspace:
-          keep: [ Inputs, Weights ]
-          bypass: [ Outputs ]
+          keep: [ Inputs, Weights, Outputs ]
+          # bypass: [ Outputs ]
     - !Component
       name: Accelerator
       spatial: { meshY: 4, meshX: 16 }

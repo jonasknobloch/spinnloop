@@ -12,8 +12,12 @@ from .tilings import _tilings, Tiling
 
 _use_cached_timeloop_results = False
 _apply_bandwidth_limits = True
+_sequence_length = 128
 
-def model(cache: bool = True, bandwidth_limits: bool = True):
+def model(sequence_length: int = 128, cache: bool = True, bandwidth_limits: bool = True):
+    global _sequence_length
+    _sequence_length = sequence_length
+
     global _use_cached_timeloop_results
     _use_cached_timeloop_results = cache
 
@@ -23,8 +27,8 @@ def model(cache: bool = True, bandwidth_limits: bool = True):
     _model()
 
 def _model():
-    trace = _trace("facebook/opt-125m", 128)
-    tilings = _tilings()
+    trace = _trace("facebook/opt-125m", _sequence_length)
+    tilings = _tilings(_sequence_length)
 
     cycles_per_layer = defaultdict(int)
     latency_per_layer = defaultdict(int)
@@ -32,10 +36,12 @@ def _model():
     for dimensions, value in trace.matmuls_grouped.items():
         # print(dimensions, value)
 
-        tiling_key = _select_tiling_key(tilings, dimensions)
+        tiling_keys = _select_tiling_keys(tilings, dimensions)
 
-        if tiling_key is None:
+        if len(tiling_keys) == 0:
             raise RuntimeError(f"no tiling for dimensions {dimensions}")
+
+        tiling_key = tiling_keys[0]
 
         processing_elements = tilings[tiling_key].processing_elements[0]
 
@@ -43,6 +49,14 @@ def _model():
 
         for i in range(len(value) // 12):
             # print(tiling_key, value[i])
+
+            # if len(tiling_keys) > 1:
+            #     print(tiling_keys)
+#
+            #     cycles_per_layer[(tiling_keys[i], value[i])] += cycles
+            #     latency_per_layer[(tiling_keys[i], value[i])] += _cycles_to_latency_us(cycles)
+#
+            #     continue
 
             cycles_per_layer[(tiling_key, value[i])] += cycles
             latency_per_layer[(tiling_key, value[i])] += _cycles_to_latency_us(cycles)
@@ -56,6 +70,8 @@ def _model():
     processing_elements_add = 128 # TODO verify
 
     for (event, shapes), value in trace.static_grouped.items():
+        break
+
         if event == "aten::add":
             if [len(s) for s in shapes] == [3, 3, 0]:
                 latency_per_layer[("layer_add", value[0])] = (shapes[0][1] * shapes[0][2]) * latency_add_ms / processing_elements_add
@@ -76,23 +92,39 @@ def _model():
 
         raise RuntimeError(f"unhandled static event {event}")
 
+    print("\n###\n###\n")
+
     for (key, value) in sorted(latency_per_layer.items(), key=lambda x: x[0][1]):
-        print(f"{key[0]},{value:.4f}")
+        # print(f"{key[0]},{cycles_per_layer[key]},{value:.0f}")
+        print(f"{value:.0f}")
 
 def _run(layer, processing_elements, dimensions):
     # layer = "qkv_with_linear"
     # processing_elements = 96
     # dimensions = (512, 768, 768)
 
+    print(f"\n### {layer}\n")
+    print(f"Modeling with {processing_elements} PEs")
+    print(f"Input dimensions are {dimensions}")
+
     spec = tl.Specification.from_yaml_files(
         "config/intmac.yaml",
         "config/architecture.yaml",
         "config/problem.yaml",
         "config/variables.yaml",
-        f"config/mappings/128/{layer}.yaml"
+        f"config/mappings/{_sequence_length}/{layer}.yaml"
     )
 
     spec.architecture.find("PE").spatial.meshX = processing_elements
+
+    # spec.architecture.find()
+
+    spec.architecture.find("DRAM").attributes.shared_bandwidth = 16
+    # spec.architecture.find("DRAM").attributes.read_bandwidth = 2048 / processing_elements
+
+    # spec.architecture.find("DRAM").attributes.shared_bandwidth = 341
+    # spec.architecture.find("DRAM").attributes.read_bandwidth = None
+    # spec.architecture.find("DRAM").attributes.write_bandwidth = None
 
     if not _apply_bandwidth_limits:
         spec.architecture.find("DRAM").attributes.shared_bandwidth = None
@@ -123,15 +155,17 @@ def _run(layer, processing_elements, dimensions):
 
     return stats.cycles
 
-def _select_tiling_key(tilings, dimensions):
+def _select_tiling_keys(tilings, dimensions):
+    keys = []
+
     for key, tiling in tilings.items():
         assert type(tiling) is Tiling
 
         # if (tiling.op_a[0], tiling.op_b[1], tiling.op_a[1]) == dimensions: # m x n x shared
         if (tiling.op_a[0], tiling.op_a[1], tiling.op_b[1]) == dimensions: # m x shared x n
-            return key
+            keys.append(key)
 
-    return None
+    return keys
 
 def _cycles_to_latency_ms(cycles, clock_speed=150e6):
     return  (cycles / clock_speed) * 1e3

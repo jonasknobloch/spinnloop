@@ -47,6 +47,8 @@ class Tiling:
         return ((self.op_a_size[0] * self.op_a_size[1]) + (self.op_b_size[0] * self.op_b_size[1])) <= buffer_capacity
 
     def _tiles_match_processing_elements(self):
+        # print(self.out_num[0] * self.out_num[1], self.processing_elements[0] * self.processing_elements[1])
+
         return self.out_num[0] * self.out_num[1] == self.processing_elements[0] * self.processing_elements[1]
 
     def loop_bounds(self, processing_elements, parts):
@@ -75,8 +77,9 @@ class Tiling:
 
         return bounds.tolist()
 
-def tilings():
-    layers = _tilings()
+def tilings(sequence_length: int = 128):
+
+    layers = _tilings(sequence_length)
 
     print(layers["q_proj"].validate(96*1024))
     print(layers["k_proj"].validate(96*1024))
@@ -86,10 +89,14 @@ def tilings():
     print(layers["fc1"].validate(96*1024))
     print(layers["fc2"].validate(96*1024))
 
-    _generate_mappings(layers, "config/mappings/128")
+    _generate_mappings(layers, f"config/mappings/{sequence_length}")
 
-def _tilings():
-    layers = _from_csv("data/2025-11-18__opt125m__tiling_prefill/tiling_prefill_token=128.csv")
+def _tilings(sequence_length: int = 128):
+    file_path = f"data/2025-11-18__opt125m__tiling_prefill/tiling_prefill_token={sequence_length}.csv"
+
+    print(file_path)
+
+    layers = _from_csv(file_path)
 
     return layers
 
@@ -114,6 +121,9 @@ def _from_csv(file_path):
                 op_a_num = get_dims('input_tile_num_vertical', 'input_tile_num_horizontal')
                 op_b_num = get_dims('weights_tile_num_vertical', 'weights_tile_num_horizontal')
                 out_num  = get_dims('output_tile_num_vertical', 'output_tile_num_horizontal')
+
+                # if row['layer_type'] == 'opt_bmm':
+                #     out_num = (out_num[0] * 12, out_num[1])
 
                 op_a = (op_a_size[0] * op_a_num[0], op_a_size[1] * op_a_num[1])
                 op_b = (op_b_size[0] * op_b_num[0], op_b_size[1] * op_b_num[1])
@@ -156,6 +166,8 @@ def _generate_mappings(layers, output_dir="mappings"):
     # M (rows), K (shared), N (columns)
 
     for name, tiling in layers.items():
+        print(name, tiling.out_size)
+
         parts = tiling.processing_elements[1]
 
         factors_accelerator = {

@@ -10,8 +10,8 @@ import plotly.figure_factory as ff
 # xls = pd.read_excel("../data/time_measurements__04__bmm_1__512x64_64x512_512x512.xlsx", sheet_name=None)
 # xls = pd.read_excel("../data/time_measurements__04__bmm_2__512x512_512x64_512x64.xlsx", sheet_name=None)
 
-# xls = pd.read_excel("../data/2025-11-18__opt125m__measurements_prefill/time_measurements_full_opt_model_prefill_64context.xlsx", sheet_name=None)
-xls = pd.read_excel("../data/2025-11-18__opt125m__measurements_prefill/time_measurements_full_opt_model_prefill_128context.xlsx", sheet_name=None)
+xls = pd.read_excel("../data/2025-11-18__opt125m__measurements_prefill/time_measurements_full_opt_model_prefill_64context.xlsx", sheet_name=None)
+# xls = pd.read_excel("../data/2025-11-18__opt125m__measurements_prefill/time_measurements_full_opt_model_prefill_128context.xlsx", sheet_name=None)
 # xls = pd.read_excel("../data/2025-11-18__opt125m__measurements_prefill/time_measurements_full_opt_model_prefill_256context.xlsx", sheet_name=None)
 # xls = pd.read_excel("../data/2025-11-18__opt125m__measurements_prefill/time_measurements_full_opt_model_prefill_512context.xlsx", sheet_name=None)
 
@@ -19,9 +19,9 @@ xls = pd.read_excel("../data/2025-11-18__opt125m__measurements_prefill/time_meas
 
 intervals = []
 
-n = 0
-
-
+_avg_over_layers = True
+_decoder_layer = 0
+_worker_idx = 0
 
 
 for name, df in xls.items():
@@ -30,13 +30,26 @@ for name, df in xls.items():
     if len(m) != 1:
         continue
 
-    if n > 0:
-        break
+    if name != f"WORKER #{_worker_idx}":
+        continue
 
     def estimate_cycles(decoder_layer, log_idx):
-        foo = df[df["Layer name"].str.contains(f"decoder_layer_{decoder_layer}_")]
+        if _avg_over_layers:
+            foo = df[df["Layer name"].str.contains(f"decoder_layer_")]
+        else:
+            foo = df[df["Layer name"].str.contains(f"decoder_layer_{decoder_layer}_")]
+
         bar = foo[foo["Layer type"].isin(["OPTLinearSLayer", "OPTBMMSLayer"])]
         baz = bar[bar["log idx"] == log_idx]
+
+        if _avg_over_layers:
+            baz = baz.copy()
+
+            baz["Layer name"] = baz["Layer name"].str.replace(
+                r"decoder_layer_\d+_",
+                "decoder_layer_avg_",
+                regex=True,
+            )
 
         result = (
             baz.groupby("Layer name").agg({
@@ -47,18 +60,91 @@ for name, df in xls.items():
             .reset_index()
         )
 
+        if _avg_over_layers:
+            result["Duration [µs]"] /= 12
+
         result["Cycles"] = result["Duration [µs]"] * 150
 
-        print(result)
+        order = [
+            "q_proj",
+            "k_proj",
+            "v_proj",
+            "qk_bmm",
+            "pv_bmm",
+            "out_proj",
+            "fc1",
+            "fc2",
+        ]
+
+        order_map = {k: i for i, k in enumerate(order)}
+
+        result["Layer name"] = result["Layer name"].str.replace(
+            r"^decoder_layer_avg_", "", regex=True
+        )
+
+        result = (
+            result.assign(_order=result["Layer name"].map(order_map))
+            .sort_values("_order")
+            .drop(columns="_order")
+        )
+
+        return result
 
     print("\n### LOAD INPUT\n")
-    estimate_cycles(0, 5)  # load input
+    foo = estimate_cycles(_decoder_layer, 5)  # load input
+    print(foo)
 
     print("\n### LOAD WEIGHTS\n")
-    estimate_cycles(0, 7)  # load weights
+    bar = estimate_cycles(_decoder_layer, 7)  # load weights
+    print(bar)
 
     print("\n### EXECUTE\n")
-    estimate_cycles(0, 8)  # execute MLA
+    baz = estimate_cycles(_decoder_layer, 8)  # execute MLA
+    print(baz)
+
+    # print("\n### STORE OUTPUT\n")
+    # boo = estimate_cycles(_decoder_layer, 11)  # execute MLA
+    # print(baz)
+
+    print("\n### ALL \n")
+
+    all_df = pd.concat([foo, bar])
+
+    result = (
+        all_df
+        .groupby("Layer name", as_index=False)
+        .agg({
+            "Duration [µs]": "sum",
+            "Cycles": "sum",
+            "Row count": "sum",
+        })
+    )
+
+    order = [
+        "q_proj",
+        "k_proj",
+        "v_proj",
+        "qk_bmm",
+        "pv_bmm",
+        "out_proj",
+        "fc1",
+        "fc2",
+    ]
+
+    order_map = {k: i for i, k in enumerate(order)}
+
+    result["Layer name"] = result["Layer name"].str.replace(
+        r"^decoder_layer_avg_", "", regex=True
+    )
+
+    result = (
+        result.assign(_order=result["Layer name"].map(order_map))
+        .sort_values("_order")
+        .drop(columns="_order")
+    )
+
+
+    print(result)
 
     # column_header = "Measurement Position"
     column_header = "log idx"
@@ -106,8 +192,6 @@ for name, df in xls.items():
     #     (int(mla_start), int(mla_end)),
     #     (int(output_start), int(output_end)),
     # ])
-
-    n += 1
 
 df = pd.DataFrame(intervals)
 
