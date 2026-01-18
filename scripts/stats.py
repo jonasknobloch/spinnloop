@@ -23,6 +23,33 @@ _avg_over_layers = True
 _decoder_layer = 0
 _worker_idx = 0
 
+def _order(result):
+    order = [
+        "q_proj",
+        "k_proj",
+        "v_proj",
+        "qk_bmm",
+        "pv_bmm",
+        "out_proj",
+        "fc1",
+        "fc2",
+    ]
+
+    order_map = {k: i for i, k in enumerate(order)}
+
+    result["Layer name"] = result["Layer name"].str.replace(
+        r"^decoder_layer_avg_", "", regex=True
+    )
+
+    result = (
+        result.assign(_order=result["Layer name"].map(order_map))
+        .sort_values("_order")
+        .drop(columns="_order")
+    )
+
+    return result
+
+all = []
 
 for name, df in xls.items():
     m = re.findall(r'\d+', name)
@@ -30,8 +57,8 @@ for name, df in xls.items():
     if len(m) != 1:
         continue
 
-    if name != f"WORKER #{_worker_idx}":
-        continue
+    # if name != f"WORKER #{_worker_idx}":
+        # continue
 
     def estimate_cycles(decoder_layer, log_idx):
         if _avg_over_layers:
@@ -65,28 +92,7 @@ for name, df in xls.items():
 
         result["Cycles"] = result["Duration [µs]"] * 150
 
-        order = [
-            "q_proj",
-            "k_proj",
-            "v_proj",
-            "qk_bmm",
-            "pv_bmm",
-            "out_proj",
-            "fc1",
-            "fc2",
-        ]
-
-        order_map = {k: i for i, k in enumerate(order)}
-
-        result["Layer name"] = result["Layer name"].str.replace(
-            r"^decoder_layer_avg_", "", regex=True
-        )
-
-        result = (
-            result.assign(_order=result["Layer name"].map(order_map))
-            .sort_values("_order")
-            .drop(columns="_order")
-        )
+        result = _order(result)
 
         return result
 
@@ -108,7 +114,8 @@ for name, df in xls.items():
 
     print("\n### ALL \n")
 
-    all_df = pd.concat([foo, bar])
+    all_df = pd.concat([foo, bar, baz])
+    # all_df = pd.concat([baz])
 
     result = (
         all_df
@@ -120,57 +127,47 @@ for name, df in xls.items():
         })
     )
 
-    order = [
-        "q_proj",
-        "k_proj",
-        "v_proj",
-        "qk_bmm",
-        "pv_bmm",
-        "out_proj",
-        "fc1",
-        "fc2",
-    ]
+    result = _order(result)
 
-    order_map = {k: i for i, k in enumerate(order)}
-
-    result["Layer name"] = result["Layer name"].str.replace(
-        r"^decoder_layer_avg_", "", regex=True
-    )
-
-    result = (
-        result.assign(_order=result["Layer name"].map(order_map))
-        .sort_values("_order")
-        .drop(columns="_order")
-    )
-
+    all.append(result)
 
     print(result)
 
+avg = (
+    pd.concat(all)
+    .groupby("Layer name", as_index=False)
+    .mean()
+)
+
+avg = _order(avg)
+
+print(avg)
+
     # column_header = "Measurement Position"
-    column_header = "log idx"
+    # column_header = "log idx"
 
     # input_transfer = df[df[column_header] == 5]["Duration [µs]"].iat[0] # DRAM only workers 0 - 31
     # input_reordering = df[df[column_header] == 6]["Duration [µs]"].iat[0]
     # weight_transfer = df[df[column_header] == 7]["Duration [µs]"].iat[0]  # 0, 32, 64, 96 DRAM; SRAM otherwise
-    mla_execution = df[df[column_header] == 8]["Duration [µs]"].iat[0]
+    # mla_execution = df[df[column_header] == 8]["Duration [µs]"].iat[0]
     # output_transfer = df[df[column_header] == 9]["Duration [µs]"].iat[0]  # DRAM all workers
 
     # input_start = df[df[column_header] == 5]["Start [µs]"].iat[0]
     # reorder_start = df[df[column_header] == 6]["Start [µs]"].iat[0]
     # weight_start = df[df[column_header] == 7]["Start [µs]"].iat[0]
-    mla_start = df[df[column_header] == 8]["Start [µs]"].iat[0]
+    # mla_start = df[df[column_header] == 8]["Start [µs]"].iat[0]
     # output_start = df[df[column_header] == 9]["Start [µs]"].iat[0]
 
     # input_end = df[df[column_header] == 5]["End [µs]"].iat[0]
     # reorder_end = df[df[column_header] == 6]["End [µs]"].iat[0]
     # weight_end = df[df[column_header] == 7]["End [µs]"].iat[0]
-    mla_end = df[df[column_header] == 8]["End [µs]"].iat[0]
+    # mla_end = df[df[column_header] == 8]["End [µs]"].iat[0]
     # output_end = df[df[column_header] == 9]["End [µs]"].iat[0]
 
     # print(f"{input_transfer/1000}ms [{input_transfer*150:6}] input_transfer")
     # print(f"{input_reordering/1000}ms [{input_reordering*150:6}] input_reordering")
     # print(f"{weight_transfer/1000}ms [{weight_transfer*150:6}] weight_transfer")
-    print(f"{mla_execution/1000}ms [{mla_execution*150:6}] mla_execution")
+    # print(f"{mla_execution/1000}ms [{mla_execution*150:6}] mla_execution")
     # print(f"{output_transfer/1000}ms [{output_transfer*150:6}] output_transfer")
 
     # if int(m[0]) > 31:
@@ -178,13 +175,13 @@ for name, df in xls.items():
     #     input_start = 0
     #     input_end = 0
 
-    intervals += [
+    # intervals += [
         # dict(Task=m[0], Start=int(input_start), Finish=int(input_end), Delta=int(input_transfer), Type="input_transfer"),
         # dict(Task=m[0], Start=int(reorder_start), Finish=int(reorder_end), Delta=int(input_reordering), Type="input_reordering"),
         # dict(Task=m[0], Start=int(weight_start), Finish=int(weight_end), Delta=int(weight_transfer), Type="weight_transfer"),
-        dict(Task=m[0], Start=int(mla_start), Finish=int(mla_end), Delta=int(mla_execution), Type="mla_execution"),
+        # dict(Task=m[0], Start=int(mla_start), Finish=int(mla_end), Delta=int(mla_execution), Type="mla_execution"),
         # dict(Task=m[0], Start=int(output_start), Finish=int(output_end), Delta=int(output_transfer), Type="output_transfer"),
-    ]
+    # ]
 
     # intervals.append([
     #     (int(input_start), int(input_end)),
@@ -193,25 +190,25 @@ for name, df in xls.items():
     #     (int(output_start), int(output_end)),
     # ])
 
-df = pd.DataFrame(intervals)
+# df = pd.DataFrame(intervals)
 
-colors = {
+# colors = {
     # "input_transfer": "rgb(255, 0, 0)",
     # "input_reordering": "rgb(0, 255, 255)",
     # "weight_transfer": "rgb(0, 255, 0)",
-    "mla_execution": "rgb(0, 0, 255)",
+    # "mla_execution": "rgb(0, 0, 255)",
     # "output_transfer": "rgb(255, 255, 0)",
-}
+# }
 
-fig = ff.create_gantt(df, colors=colors, index_col="Type", group_tasks=True)
+# fig = ff.create_gantt(df, colors=colors, index_col="Type", group_tasks=True)
 
-fig.layout.xaxis.type = "linear"
+# fig.layout.xaxis.type = "linear"
 # f = fig.full_figure_for_development(warn=False)
 # fig['layout']['xaxis'].update({'type': None})
 
-fig.update_layout(
-    height=30 * 128
-)
+# fig.update_layout(
+#     height=30 * 128
+# )
 
 # fig.show()
-fig.write_html("../out/stats.html", include_plotlyjs="cdn", auto_open=False)
+# fig.write_html("../out/stats.html", include_plotlyjs="cdn", auto_open=False)
