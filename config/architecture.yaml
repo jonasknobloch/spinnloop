@@ -16,9 +16,9 @@ architecture:
     - !Container
       name: PE
       spatial: { meshY: 1, meshX: 128 }
-      constraints:
-        spatial:
-          no_reuse: [ Inputs, Weights ]
+      # constraints:
+        # spatial:
+          # no_reuse: [ Inputs, Weights ]
         #   no_link_transfer: [ Inputs, Weights ] # no effect
     - !Component
       name: Buffer
@@ -27,6 +27,8 @@ architecture:
         depth: 12288
         width: 64
         datawidth: 8
+        # read_bandwidth: 128
+        # write_bandwidth: 64
       constraints:
         dataspace:
           keep: [ Inputs, Weights, Outputs ]
